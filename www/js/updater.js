@@ -44,7 +44,13 @@
     b.textContent = "⬆ Check for update (v" + cur + ")"; b.onclick = function () { check(true) };
     mc.parentNode.insertBefore(b, mc)
   }
-  addMenuBtn(); setTimeout(addMenuBtn, 1500);
+  function addBanner() {
+    var mt = document.getElementById("mt"); if (!mt || document.getElementById("menuban")) return;
+    var im = document.createElement("img"); im.id = "menuban"; im.src = "img/car.jpg";
+    im.style.cssText = "display:block;width:100%;max-height:110px;object-fit:cover;border-radius:12px;margin:0 0 8px;box-shadow:0 4px 18px #000a";
+    mt.parentNode.insertBefore(im, mt)
+  }
+  addMenuBtn(); addBanner(); setTimeout(function () { addMenuBtn(); addBanner() }, 1500);
   /* auto-check once the game is up */
   var t0 = setInterval(function () { try { if (typeof ready !== "undefined" && ready === true) { clearInterval(t0); setTimeout(function () { check(false) }, 4000) } } catch (e) { } }, 1000);
   window.F1Update = { check: check, version: cur }
