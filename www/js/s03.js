@@ -38,7 +38,7 @@
       if (cores <= 4) i = Math.min(i, 1)
     }
     if (px > 9e6 && i > 1) i--;
-    var ceil = mob ? Math.min(3, i + 1) : 4; i = Math.min(i, ceil);
+    var ceil = mob ? 1 : 4; i = Math.min(i, ceil); if (mob) window.PQP = 600000;
     return { i: i, ceil: ceil, gpu: g, mob: mob, mem: mem, cores: cores }
   }
   var saved = "auto"; try { var sv = localStorage.getItem("f2008gfx"); if (sv === "auto" || TI[sv]) saved = sv } catch (e) { }
