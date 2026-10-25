@@ -10,7 +10,8 @@
     "CapacitorUpdater": {
       "autoUpdate": false,
       "appReadyTimeout": 120000,
-      "resetWhenUpdate": true
+      "resetWhenUpdate": true,
+      "statsUrl": ""
     },
     "CapacitorHttp": {
       "enabled": true

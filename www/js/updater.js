@@ -19,7 +19,8 @@
       .then(function (j) {
         var m = /v(\d+)/.exec(j.name || "") || /v(\d+)/.exec(j.body || ""), n = m ? +m[1] : 0;
         var a = (j.assets || []).filter(function (x) { return x.name === "bundle.zip" })[0];
-        if (a && n > cur) { latest = { n: n, url: a.browser_download_url, mb: Math.round(a.size / 1048576) }; offer() }
+        var sm = /sha256=([0-9a-f]{64})/i.exec(j.body || ""), ck = sm ? sm[1].toLowerCase() : String(a && a.digest || "").replace(/^sha256:/, "").toLowerCase();
+        if (a && n > cur) { if (ck.length !== 64) { if (manual) toast("Update info adhoori (checksum nahi mila)"); return } latest = { n: n, url: a.browser_download_url, mb: Math.round(a.size / 1048576), ck: ck }; offer() }
         else if (manual) toast("Game up to date ✅ (v" + cur + ")")
         else hide()
       })
@@ -33,7 +34,7 @@
     var cu = CU(); busy = true;
     show("<span>Downloading…</span><i><b id='updb'></b></i><span id='updp'>0%</span>");
     try { cu.addListener("download", function (e) { var p = e && e.percent || 0, b = document.getElementById("updb"), t = document.getElementById("updp"); if (b) b.style.width = p + "%"; if (t) t.textContent = Math.round(p) + "%" }) } catch (e) { }
-    cu.download({ url: latest.url, version: String(latest.n) })
+    cu.download({ url: latest.url, version: String(latest.n), checksum: latest.ck })
       .then(function (bd) { show("<span>Installing…</span>"); return cu.set(bd) })
       .catch(function (e) { busy = false; show("<span>Update fail: " + (e && e.message || e) + "</span><button id='updgo'>Retry</button><button class='x' id='updno'>Close</button>"); document.getElementById("updgo").onclick = go; document.getElementById("updno").onclick = hide })
   }

@@ -39,7 +39,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk F1-Drift.apk
+          SHA=$(sha256sum bundle.zip | cut -d' ' -f1)
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest F1-Drift.apk bundle.zip --title "F1 Drift v${{ github.run_number }}" --notes "v${{ github.run_number }} · ${{ github.sha }}"
+          gh release create latest F1-Drift.apk bundle.zip --title "F1 Drift v${{ github.run_number }}" --notes "v${{ github.run_number }} · ${{ github.sha }} · sha256=$SHA"
       - uses: actions/upload-artifact@v4
         with: { name: F1-Drift-apk, path: F1-Drift.apk }
