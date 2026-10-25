@@ -1,0 +1,7 @@
+{
+  "appId": "com.f1drift.game",
+  "appName": "F1 Drift",
+  "webDir": "www",
+  "backgroundColor": "#0b0d12",
+  "android": { "allowMixedContent": false }
+}
