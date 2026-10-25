@@ -1244,7 +1244,7 @@ vec4 stkS(){
     /* ---------- 8-speed manual gearbox (top speed 400 km/h) ---------- */
     const GMAX = [60, 108, 156, 204, 252, 300, 352, 400].map(k => k / 3.6); let gtMsg = "", gtUntil = 0;
     function gcur(r) { return r < .35 ? .2 + .8 * Math.pow(r / .35, .8) : r < .85 ? 1 : r < 1 ? 1 - .6 * (r - .85) / .15 : 0 }
-    function gearAcc(v) { const g = P.gn; if (g < 1 || P.sc > 0) return 0; const gm = GMAX[g - 1], r = v / gm; if (r >= 1) return -Math.min(30, (r - 1) * gm * 4 + 2); return 24 * Math.pow(60 / (gm * 3.6), .42) * gcur(r) }
+    function gearAcc(v) { const g = P.gn; if (g < 1 || P.sc > 0) return 0; const gm = GMAX[g - 1] * (1 + .2 * (window.NITRO ? NITRO.a : 0)), r = v / gm; if (r >= 1) return -Math.min(30, (r - 1) * gm * 4 + 2); return 24 * Math.pow(60 / (gm * 3.6), .42) * gcur(r) }
     function engBrake(v) { const g = P.gn; if (g < 1) return 0; const gm = GMAX[g - 1], r = Math.min(1.3, v / gm); return (.8 + 5 * r) * (1.2 - g / 10) }
     function shiftGear(d) {
       if (menuOn || gOn || mode == "show" || !ready) return; const n = P.gn + d; if (n < 0 || n > 8) return; const v = Math.hypot(P.vx, P.vz);
@@ -1271,7 +1271,7 @@ vec4 stkS(){
       P.dr += (want - P.dr) * Math.min(1, dt * (want ? 7 : brk ? 6 : 2.4)); if (!want && P.dr < .02) { P.dr = 0; P.dd = 0 }
       const dr = P.dr, gasOn = can && up;
       if (can && hb) acc -= Math.sign(fv) * 14 * (1 - dr * .9);
-      let nfv = fv + acc * dt; if (!(up || dn) && fv * nfv < 0) nfv = 0; P.vx += fx * (nfv - fv); P.vz += fz * (nfv - fv);
+      acc += (window.NITRO ? NITRO.step(dt, can, fv, hb, dn) : 0); let nfv = fv + acc * dt; if (!(up || dn) && fv * nfv < 0) nfv = 0; P.vx += fx * (nfv - fv); P.vz += fz * (nfv - fv);
       const spd = Math.hypot(P.vx, P.vz);
       const rx = Math.cos(P.h), rz = -Math.sin(P.h), fvn = P.vx * fx + P.vz * fz, slip = Math.atan2(P.vx * rx + P.vz * rz, Math.max(fvn, .1)); P.sl = slip;
       const yb = Math.min(2.1, 68 / Math.max(spd, 1)), yd = Math.min(2.6, 125 / Math.max(spd, 1));
@@ -1284,7 +1284,7 @@ vec4 stkS(){
       if (dr > .02) { const sa = Math.hypot(P.vx, P.vz); if (sa > .5) { const cf = 1 + (spd / sa - 1) * dr * (gasOn ? 1 : 1); P.vx *= cf; P.vz *= cf } }
       if (dr > .02) { const s3 = Math.hypot(P.vx, P.vz), dv2 = dr * Math.abs(Math.sin(slip)) * (gasOn ? 0 : .8) * dt; if (s3 > dv2) { const q = (s3 - dv2) / s3; P.vx *= q; P.vz *= q } }
       if (hb && can) { const sb = Math.hypot(P.vx, P.vz), db = (ast > .3 ? 20 + 30 * dr : 44) * dt; if (sb > db) { const q = (sb - db) / sb; P.vx *= q; P.vz *= q } else { P.vx = P.vz = 0 } }
-      const s2 = Math.hypot(P.vx, P.vz); if (s2 > VCAP) { P.vx *= VCAP / s2; P.vz *= VCAP / s2 }
+      const s2 = Math.hypot(P.vx, P.vz), VC_ = VCAP * (1 + .2 * (window.NITRO ? NITRO.a : 0)); if (s2 > VC_) { P.vx *= VC_ / s2; P.vz *= VC_ / s2 }
       {
         const v = Math.hypot(P.vx, P.vz), gx = P.gx || 0, gz = P.gz || 0, gd = 1 / (1 + gx * gx + gz * gz), sx = -9.81 * gx * gd, sz = -9.81 * gz * gd;
         if (!P.air && (v > 1.2 || Math.hypot(gx, gz) > .62)) { const lon = sx * fx + sz * fz, lat = sx * fz - sz * fx, ex = Math.abs(lat) - 8; P.vx += fx * lon * dt; P.vz += fz * lon * dt; if (ex > 0) { const sg = lat > 0 ? 1 : -1; P.vx += fz * sg * ex * dt; P.vz -= fx * sg * ex * dt } }
@@ -1416,7 +1416,7 @@ vec4 stkS(){
       const w = (mode == "show" ? 0 : camPsi) + cth, ty = .8 + P.ey, sf = Math.min(1, Math.hypot(P.vx, P.vz) / VCAP), er = mode == "show" ? crad : crad * (1 + .2 * sf), sh = mode == "show" ? 0 : .07 * sf * sf * sf, j = () => (rnd() - .5) * sh;
       C.position.set(P.x + er * Math.sin(cph) * Math.sin(w) + j(), ty + er * Math.cos(cph) + j(), P.z + er * Math.sin(cph) * Math.cos(w) + j());
       if (mode != "show") C.position.y = Math.max(C.position.y, window.__camMin ? window.__camMin(C.position.x, C.position.z) : .4);
-      C.lookAt(P.x, ty, P.z); const f = (mode == "show" ? 42 : 55 + 47 * Math.pow(sf, 1.05)); C.fov += (f - C.fov) * Math.min(1, dt * 5); C.updateProjectionMatrix()
+      C.lookAt(P.x, ty, P.z); const f = (mode == "show" ? 42 : 55 + 47 * Math.pow(sf, 1.05) + (window.NITRO ? 16 * NITRO.a : 0)); C.fov += (f - C.fov) * Math.min(1, dt * 5); C.updateProjectionMatrix()
     }
     const cv = $("c"), ptr = new Map(); let pd = 0; const pdist = () => { const a = [...ptr.values()]; return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) };
     const zoom = f => { if (dv) { dvZ = Math.min(1.3, Math.max(.6, dvZ * f)); return } crad = Math.min(mode == "show" ? 20 : 45, Math.max(mode == "show" ? 3 : 4, crad * f)) };
