@@ -3,5 +3,17 @@
   "appName": "F1 Drift",
   "webDir": "www",
   "backgroundColor": "#0b0d12",
-  "android": { "allowMixedContent": false }
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "appReadyTimeout": 120000,
+      "resetWhenUpdate": true
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 A=android/app/src/main
+VER=${VER:-1}
+sed -i "s/versionCode [0-9]*/versionCode $VER/; s/versionName \"[^\"]*\"/versionName \"1.$VER\"/" android/app/build.gradle
 # landscape + fullscreen + keep hardware accel
 sed -i 's|<activity|<activity android:screenOrientation="sensorLandscape" android:hardwareAccelerated="true"|' $A/AndroidManifest.xml
 sed -i 's|android:largeHeap="[a-z]*"||; s|<application|<application android:largeHeap="true"|' $A/AndroidManifest.xml
