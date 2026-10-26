@@ -34,7 +34,7 @@
       if (m.em) { M.emissive = new THREE.Color(m.em[0], m.em[1], m.em[2]); const et = m.et >= 0 ? tx[m.et] : M.map; if (et) M.emissiveMap = et; M.emissiveIntensity = 1 }
       M.userData = { k: m.n }; return M
     });
-    const mesh = (p, parent) => { const m = new THREE.Mesh(geo(p), mats[p.m]); m.userData.k = D.mats[p.m].n; m.castShadow = !mats[p.m].transparent; parent.add(m); return m };
+    const mesh = (p, parent) => { const m = new THREE.Mesh(geo(p), mats[p.m]); m.userData.k = D.mats[p.m].n; m.castShadow = false; parent.add(m); return m };
     const c = new THREE.Group(), bd = new THREE.Group(); c.add(bd); c.rotation.order = "YXZ";
     const bodyMeshes = D.g.body.map(p => mesh(p, bd));
     const wh = {}; let maxX = 0, zF = -9, zR = 9;

@@ -54,5 +54,21 @@
   addMenuBtn(); addBanner(); setTimeout(function () { addMenuBtn(); addBanner() }, 1500);
   /* auto-check once the game is up */
   var t0 = setInterval(function () { try { if (typeof ready !== "undefined" && ready === true) { clearInterval(t0); setTimeout(function () { check(false) }, 4000) } } catch (e) { } }, 1000);
+
+  /* keep telling the OTA plugin that this bundle is healthy (a missed call makes it roll back) */
+  function notify() { try { var c = CU(); c && c.notifyAppReady && c.notifyAppReady() } catch (e) { } }
+  notify(); [300, 1500, 4000, 9000].forEach(function (t) { setTimeout(notify, t) });
+  var nn = 0, ni = setInterval(function () { notify(); if (++nn > 12) clearInterval(ni) }, 10000);
+  /* tiny diagnostics line (bottom centre): version, OTA bundle, FPS, errors, extra cars */
+  var errs = 0, lastE = "", fps = 0, frames = 0, bundle = "?";
+  addEventListener("error", function (e) { errs++; lastE = String(e.message || "").slice(0, 60) });
+  addEventListener("unhandledrejection", function (e) { errs++; lastE = String(e.reason && e.reason.message || e.reason || "").slice(0, 60) });
+  try { var cc = CU(); cc && cc.current().then(function (r) { bundle = (r.bundle.version === "builtin" ? "APK" : "OTA " + r.bundle.version) }).catch(function () { }) } catch (e) { }
+  var dbg = document.createElement("div"); dbg.id = "dbg";
+  dbg.style.cssText = "position:fixed;z-index:99990;left:50%;bottom:calc(2px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font:9px/1.2 monospace;color:#fff;opacity:.55;pointer-events:none;white-space:nowrap;text-shadow:0 1px 2px #000";
+  document.body.appendChild(dbg);
+  (function f() { frames++; requestAnimationFrame(f) })();
+  setInterval(function () { fps = frames; frames = 0; var x = document.getElementById("xcr"), m = x ? /extra cars: (\d+)\/(\d+)/.exec(x.textContent) : null;
+    dbg.textContent = "v" + cur + " · " + bundle + " · " + fps + "fps · cars " + (m ? m[1] + "/" + m[2] : "?") + " · err " + errs + (lastE ? " (" + lastE + ")" : "") }, 1000);
   window.F1Update = { check: check, version: cur }
 })();
