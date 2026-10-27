@@ -81,7 +81,9 @@
   }
   function addShare() {
     var mc = document.getElementById("mc"); if (!mc || document.getElementById("shbtn")) return;
-    var b = document.createElement("button"); b.id = "shbtn"; b.className = "mm"; b.style.marginTop = "8px"; b.textContent = "📤 Share game"; b.onclick = share; mc.parentNode.insertBefore(b, mc)
+    var b = document.createElement("button"); b.id = "shbtn"; b.className = "mm"; b.style.marginTop = "8px"; b.textContent = "📤 Share game"; b.onclick = share; mc.parentNode.insertBefore(b, mc);
+    var q = document.createElement("img"); q.id = "shqr"; q.src = "img/share-qr.webp"; q.alt = "QR - download F1 Drift";
+    q.style.cssText = "display:block;margin:10px auto 4px;width:min(210px,52vw);height:auto;border-radius:12px"; mc.parentNode.insertBefore(q, mc)
   }
   addShare(); setTimeout(addShare, 1500); setTimeout(addShare, 4000);
   window.F1Update = { check: check, version: cur }
