@@ -6,9 +6,13 @@
   "use strict";
   const DEFS = [
     { id: "rb22", btn: "RB22 2026", title: "RED BULL RACING RB22", ratio: 3.0 },
-    { id: "gt3", btn: "AMG GT3", title: "MERCEDES-AMG GT3 RED BULL", ratio: 3.4 }
+    { id: "gt3", btn: "AMG GT3", title: "MERCEDES-AMG GT3 RED BULL", ratio: 3.4 },
+    { id: "jesko", btn: "JESKO", title: "KOENIGSEGG JESKO", ratio: 3.2 },
+    { id: "fxxk", btn: "FXX-K EVO", title: "FERRARI FXX-K EVO", ratio: 3.2 },
+    { id: "furai", btn: "FURAI", title: "MAZDA FURAI", ratio: 3.2 },
+    { id: "apollo", btn: "APOLLO IE", title: "APOLLO INTENSA EMOZIONE", ratio: 3.2 }
   ];
-  const CREDITS = "Models (CC BY 4.0, Sketchfab): 2026 Red Bull RB22 by Dave Love · Mercedes-AMG GT3 Evo by vecarz";
+  const CREDITS = "Models (CC BY 4.0, Sketchfab): RB22 – Dave Love · AMG GT3 Evo – vecarz · Jesko, FXX-K Evo, Furai, Apollo IE – kevin (sohyalebret)";
   const b64u8 = b => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u };
   async function inflate(b64) { return await new Response(new Blob([b64u8(b64)]).stream().pipeThrough(new DecompressionStream("gzip"))).json() }
   const dq = (b, T) => new T(b64u8(b).buffer);

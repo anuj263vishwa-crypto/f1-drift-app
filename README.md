@@ -19,4 +19,5 @@ Keyboard: arrows / WASD, Space = handbrake, **N** = nitro, E/Q = gears, C = chan
 ## 🙏 Credits
 - 2026 Red Bull Racing RB22 – Dave Love (Sketchfab, CC BY 4.0)
 - Mercedes-AMG GT3 Evo – vecarz (Sketchfab, CC BY 4.0)
+- Koenigsegg Jesko, Ferrari FXX-K Evo, Mazda Furai, Apollo Intensa Emozione – kevin / sohyalebret (Sketchfab, CC BY 4.0)
 - Built with three.js and Capacitor.
