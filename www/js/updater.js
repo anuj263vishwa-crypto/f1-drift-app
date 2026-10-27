@@ -69,6 +69,7 @@
   document.body.appendChild(dbg);
   (function f() { frames++; requestAnimationFrame(f) })();
   setInterval(function () { fps = frames; frames = 0; var x = document.getElementById("xcr"), m = x ? /extra cars: (\d+)\/(\d+)/.exec(x.textContent) : null;
-    dbg.textContent = "v" + cur + " · " + bundle + " · " + fps + "fps · cars " + (m ? m[1] + "/" + m[2] : "?") + " · err " + errs + (lastE ? " (" + lastE + ")" : "") }, 1000);
+    var gm = ""; try { gm = " · gpu " + R.info.memory.geometries + "g/" + R.info.memory.textures + "t" } catch (e) { }
+    dbg.textContent = "v" + cur + " · " + bundle + " · " + fps + "fps" + gm + " · cars " + (m ? m[1] + "/" + m[2] : "?") + " · err " + errs + (lastE ? " (" + lastE + ")" : "") }, 1000);
   window.F1Update = { check: check, version: cur }
 })();

@@ -80,8 +80,7 @@
     const D = await inflate(window.__CD[def.id]); const X = build(def, D), id = def.id;
     Object.defineProperty(CARS, id, { value: X, writable: true, configurable: true, enumerable: false });
     CN[id] = def.btn; TT[id] = def.title; WR[id] = D.wr; ORD.push(id);
-    const release = () => X.c.traverse(o => { if (o.isMesh) { o.geometry.dispose(); const m = o.material; if (m.map) m.map.dispose(); if (m.emissiveMap) m.emissiveMap.dispose() } });
-    const _set = window.setCar; window.setCar = function (i) { _set(i); const vis = i == id; if (X.c.visible && !vis) release(); X.c.visible = vis };
+    const _set = window.setCar; window.setCar = function (i) { _set(i); X.c.visible = i == id };
     const _apply = window.applyCfg; window.applyCfg = function () { _apply(); for (const k in X.wh) { const w = X.wh[k]; w.st.scale.setScalar(CFG.ws); w.st.position.y = w.by = w.y0 + D.wr * (CFG.ws - 1) } };
     const _ref = window.refreshUI; window.refreshUI = function () { _ref(); if (cur == id) document.querySelectorAll("#opts .row").forEach(r => { r.style.display = ["ws"].includes(r.dataset.rk) ? "" : "none" }) };
     const _dvs = window.dvSteer; window.dvSteer = function () { _dvs(); const on = cur == id && dv && mode != "show"; if (on !== X._cutOn.v) { X._cutOn.v = on; X._cuts.forEach(c => c.g.setIndex(on ? c.cut : c.full)) } };
@@ -94,9 +93,16 @@
   }
   const built = {}, toast = t => { let e = document.getElementById("xld"); if (!e) { e = document.createElement("div"); e.id = "xld"; e.style.cssText = "position:fixed;z-index:99998;left:50%;top:18%;transform:translateX(-50%);background:rgba(14,17,24,.92);color:#fff;border:1px solid #ffffff30;border-radius:12px;padding:10px 16px;font:600 14px system-ui,sans-serif"; document.body.appendChild(e) } e.textContent = t; e.style.display = t ? "block" : "none" };
   async function ensure(def) { if (built[def.id]) return built[def.id]; return built[def.id] = (async () => { toast("Loading " + def.btn + "…"); await new Promise(r => setTimeout(r, 60)); try { await install(def) } finally { toast("") } })() }
+  function releaseCar(id) {
+    if (!id || id === "f26") return; const X = CARS[id]; if (!X || !X.c) return;
+    X.c.traverse(o => { if (!o.isMesh) return; try { o.geometry.dispose() } catch (e) { }
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (!m) return; ["map", "emissiveMap", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "alphaMap"].forEach(k => { if (m[k] && m[k].dispose) m[k].dispose() }) }) })
+  }
+  let gHook = false;
+  function hookRelease() { if (gHook) return; gHook = true; const _s = window.setCar; window.setCar = function (i) { const prev = cur; _s(i); if (prev && prev !== i) releaseCar(prev) } }
   let firstSel = false, lastErr = "";
   function sync() {   /* keeps the two buttons + status line alive no matter what the game does with #cs */
-    const cs = document.getElementById("cs"); if (!cs) return;
+    hookRelease(); const cs = document.getElementById("cs"); if (!cs) return;
     for (const d of DEFS) {
       if (!built[d.id] && !(window.__CD && window.__CD[d.id])) continue;
       if (!cs.querySelector('[data-c="' + d.id + '"]')) {
