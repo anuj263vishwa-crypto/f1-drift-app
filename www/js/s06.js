@@ -1066,7 +1066,7 @@ vec4 stkS(){
         });
         const MG = Object.keys(cat).map(key => { const c = cat[key], g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(c.p, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(c.n, 3)); g.setIndex(c.i); return { g, key, mat: c.mat } });
         const AIC = [0xf5c518, 0x1d4ed8, 0xe8e8e8, 0xff6a00, 0x0f7a3e, 0x9aa3ad, 0x161616, 0x7b2cbf, 0x00a3b4, 0xc40a0a];
-        for (let n = 0; n < 19; n++) { const g = new THREE.Group(), pm = new THREE.MeshStandardMaterial({ color: AIC[n % 10], roughness: .35, metalness: .1, side: THREE.DoubleSide }); MG.forEach(m => { const me = new THREE.Mesh(m.g, m.key == "paint" ? pm : m.mat); me.castShadow = !!__Q.ais; g.add(me) }); g.add(sh.clone()); g.add(mkCS(CARS.f26.wh)); S.add(g); ais.push({ g, col: AIC[n % 10], s: 0, v: 0, lane: 0, tl: 0, top: 58 + rnd() * 14 }) }
+        for (let n = 0; n < 5; n++) { const g = new THREE.Group(), pm = new THREE.MeshStandardMaterial({ color: AIC[n % 10], roughness: .35, metalness: .1, side: THREE.DoubleSide }); MG.forEach(m => { const me = new THREE.Mesh(m.g, m.key == "paint" ? pm : m.mat); me.castShadow = !!__Q.ais; g.add(me) }); g.add(sh.clone()); g.add(mkCS(CARS.f26.wh)); S.add(g); ais.push({ g, col: AIC[n % 10], s: 0, v: 0, lane: 0, tl: 0, top: 58 + rnd() * 14 }) }
         const gm = new THREE.MeshStandardMaterial({ color: 0x7fd8ff, emissive: 0x1a6fa0, transparent: true, opacity: .42, depthWrite: false, roughness: .5 });
         ghostG = new THREE.Group(); MG.forEach(m => { if (m.key != "FERWIND") ghostG.add(new THREE.Mesh(m.g, gm)) }); ghostG.visible = false; S.add(ghostG)
       }

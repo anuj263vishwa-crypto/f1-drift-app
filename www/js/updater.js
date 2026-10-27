@@ -71,5 +71,18 @@
   setInterval(function () { fps = frames; frames = 0; var x = document.getElementById("xcr"), m = x ? /extra cars: (\d+)\/(\d+)/.exec(x.textContent) : null;
     var gm = ""; try { gm = " · gpu " + R.info.memory.geometries + "g/" + R.info.memory.textures + "t" } catch (e) { }
     dbg.textContent = "v" + cur + " · " + bundle + " · " + fps + "fps" + gm + " · cars " + (m ? m[1] + "/" + m[2] : "?") + " · err " + errs + (lastE ? " (" + lastE + ")" : "") }, 1000);
+
+  /* share button in the menu */
+  var SHARE = "https://github.com/anuj263vishwa-crypto/f1-drift-app/releases/latest/download/F1-Drift.apk";
+  function share() {
+    var data = { title: "F1 Drift", text: "F1 Drift – racing game, download:", url: SHARE };
+    if (navigator.share) { navigator.share(data).catch(function () { }); return }
+    try { navigator.clipboard.writeText(SHARE).then(function () { toast("Link copied ✅") }, function () { toast(SHARE, 6000) }) } catch (e) { toast(SHARE, 6000) }
+  }
+  function addShare() {
+    var mc = document.getElementById("mc"); if (!mc || document.getElementById("shbtn")) return;
+    var b = document.createElement("button"); b.id = "shbtn"; b.className = "mm"; b.style.marginTop = "8px"; b.textContent = "📤 Share game"; b.onclick = share; mc.parentNode.insertBefore(b, mc)
+  }
+  addShare(); setTimeout(addShare, 1500); setTimeout(addShare, 4000);
   window.F1Update = { check: check, version: cur }
 })();
