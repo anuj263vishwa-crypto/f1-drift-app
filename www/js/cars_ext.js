@@ -26,34 +26,37 @@
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
     g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.setIndex(new THREE.BufferAttribute(I, 1)); g.computeBoundingSphere(); return g
   }
+  window.EXTLOD = (function () { try { return localStorage.getItem("f1lod") === "lo" ? "lo" : "hi" } catch (e) { return "hi" } })();
   function build(def, D) {
     const tx = D.tex.map(u => { const t = new THREE.TextureLoader().load(u); t.flipY = false; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; return t });
     const mats = D.mats.map(m => {
-      const glass = m.bl && /glass|windscreen|window/i.test(m.n) && !(m.t >= 0 && /sticker/i.test(m.n));
-      const M = new THREE.MeshStandardMaterial({ color: new THREE.Color(m.c[0], m.c[1], m.c[2]), roughness: Math.max(m.r, glass ? .05 : .28), metalness: Math.min(m.m, .5), side: (m.ds || m.bl) ? THREE.DoubleSide : THREE.FrontSide });
+      const P = { color: new THREE.Color(m.c[0], m.c[1], m.c[2]), roughness: m.r, metalness: m.m, side: (m.ds || m.bl) ? THREE.DoubleSide : THREE.FrontSide };
+      const M = m.cc > 0 ? new THREE.MeshPhysicalMaterial(Object.assign(P, { clearcoat: m.cc, clearcoatRoughness: m.ccr })) : new THREE.MeshStandardMaterial(P);
       if (m.t >= 0) M.map = tx[m.t];
-      if (m.bl || m.ta) { M.transparent = !!m.bl; M.opacity = m.a; M.depthWrite = !(glass || m.a < .85); if (m.t >= 0 && m.ta) M.alphaTest = .04 }
-      if (m.mk) M.alphaTest = .5;
-      if (glass) { M.color.set(0x0b1016); M.opacity = .45; M.metalness = .3; M.roughness = .05; M.map = null; M.alphaTest = 0; M.transparent = true; M.depthWrite = false }
+      if (m.mr >= 0) { M.roughnessMap = tx[m.mr]; M.metalnessMap = tx[m.mr] }
+      if (m.nt >= 0) { M.normalMap = tx[m.nt]; M.normalScale = new THREE.Vector2(m.ns, m.ns) }
+      if (m.bl) { M.transparent = true; M.opacity = m.a; M.depthWrite = m.a > .85; if (m.t >= 0) M.alphaTest = .02 }
+      if (m.mk) M.alphaTest = m.ac;
       if (m.em) { M.emissive = new THREE.Color(m.em[0], m.em[1], m.em[2]); const et = m.et >= 0 ? tx[m.et] : M.map; if (et) M.emissiveMap = et; M.emissiveIntensity = 1 }
       M.userData = { k: m.n }; return M
     });
-    const mesh = (p, parent) => { const m = new THREE.Mesh(geo(p), mats[p.m]); m.userData.k = D.mats[p.m].n; m.castShadow = false; parent.add(m); return m };
+    const LOD = { hi: [], lo: [] }, bodyMeshes = [];
+    const mesh = (p, parent, lod) => { const m = new THREE.Mesh(geo(p), mats[p.m]); m.userData.k = D.mats[p.m].n; m.castShadow = false; m.visible = lod === window.EXTLOD; parent.add(m); LOD[lod].push(m); return m };
     const c = new THREE.Group(), bd = new THREE.Group(); c.add(bd); c.rotation.order = "YXZ";
-    const bodyMeshes = D.g.body.map(p => mesh(p, bd));
     const wh = {}; let maxX = 0, zF = -9, zR = 9;
-    for (const k in D.g.wheels) {
-      const w = D.g.wheels[k], st = new THREE.Group(), sp = new THREE.Group(); st.position.fromArray(w.c); st.add(sp); bd.add(st);
-      w.sp.forEach(p => mesh(p, sp)); w.st.forEach(p => mesh(p, st)); wh[k] = { st, sp, y0: w.c[1] };
-      maxX = Math.max(maxX, Math.abs(w.c[0])); zF = Math.max(zF, w.c[2]); zR = Math.min(zR, w.c[2])
+    const g0 = D.g.hi;
+    for (const k in g0.wheels) {
+      const w = g0.wheels[k], st = new THREE.Group(), sp = new THREE.Group(); st.position.fromArray(w.c); st.add(sp); bd.add(st);
+      wh[k] = { st, sp, y0: w.c[1] }; maxX = Math.max(maxX, Math.abs(w.c[0])); zF = Math.max(zF, w.c[2]); zR = Math.min(zR, w.c[2])
     }
     /* steering wheel: pivot on the hub, local +Z = column axis pointing at the driver */
-    const sw = D.g.sw, swPar = new THREE.Group(), swSp = new THREE.Group(); let eye = D.eye;
-    if (sw) {
-      const e1 = new THREE.Vector3().fromArray(sw.B, 0), e2 = new THREE.Vector3().fromArray(sw.B, 3), n = new THREE.Vector3().fromArray(sw.B, 6);
-      swPar.position.fromArray(sw.c); swPar.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(e1, e2, n)); swPar.add(swSp); bd.add(swPar);
-      sw.prims.forEach(p => mesh(p, swSp))
-    }
+    const sw = g0.sw, swPar = new THREE.Group(), swSp = new THREE.Group(); let eye = D.eye;
+    if (sw) { const e1 = new THREE.Vector3().fromArray(sw.B, 0), e2 = new THREE.Vector3().fromArray(sw.B, 3), n = new THREE.Vector3().fromArray(sw.B, 6);
+      swPar.position.fromArray(sw.c); swPar.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(e1, e2, n)); swPar.add(swSp); bd.add(swPar) }
+    for (const lod of ["hi", "lo"]) { const g = D.g[lod]; if (!g) continue;
+      g.body.forEach(p => bodyMeshes.push(mesh(p, bd, lod)));
+      for (const k in g.wheels) { g.wheels[k].sp.forEach(p => mesh(p, wh[k].sp, lod)); g.wheels[k].st.forEach(p => mesh(p, wh[k].st, lod)) }
+      if (g.sw) g.sw.prims.forEach(p => mesh(p, swSp, lod)) }
     /* contact shadow blob */
     { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const g = cv.getContext("2d"), r = g.createRadialGradient(32, 32, 1, 32, 32, 32);
       r.addColorStop(0, "rgba(0,0,0,.85)"); r.addColorStop(.55, "rgba(0,0,0,.4)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64);
@@ -70,7 +73,8 @@
         fl.userData.ms.push(m1, m2); fl.userData.sp.push(gl); fl.add(m1, m2, gl); cx += q[0]; cy += q[1]; cz += q[2] }
       fl.userData.cx = cx / D.ex.length; fl.userData.cy = cy / D.ex.length; fl.userData.cz = cz / D.ex.length }
     c.visible = false; S.add(c);
-    const X = { c, wh, pt: [], fl };
+    const X = { c, wh, pt: [], fl, LOD };
+    X.setLod = mode => { for (const l of ["hi", "lo"]) LOD[l].forEach(m => { m.visible = l === mode }) };
     /* driver view: eye + cut-away of the seat / head area; wheel turns with the front wheels */
     const cuts = [], cutOn = { v: false }, E = eye;
     bodyMeshes.forEach(o => { const g = o.geometry, ix = g.index.array, pa = g.attributes.position, keep = [];
@@ -112,6 +116,9 @@
       if (!cs.querySelector('[data-c="' + d.id + '"]')) {
         const b = document.createElement("button"); b.dataset.c = d.id; b.textContent = d.btn;
         b.onclick = () => { if (ready) ensure(d).then(() => setCar(d.id)).catch(e => { lastErr = String(e && e.message || e); toast("Car load fail: " + lastErr); setTimeout(() => toast(""), 4000) }) }; cs.append(b) } }
+    if (!document.getElementById("xlod")) { const mc = document.getElementById("mc"); if (mc) { const b = document.createElement("button"); b.id = "xlod"; b.className = "mm"; b.style.marginTop = "8px";
+      const lab = () => { b.textContent = "🚗 New cars detail: " + (window.EXTLOD === "hi" ? "FULL" : "LITE (faster)") }; lab();
+      b.onclick = () => { window.EXTLOD = window.EXTLOD === "hi" ? "lo" : "hi"; try { localStorage.setItem("f1lod", window.EXTLOD) } catch (e) { } for (const id in (window.EXTCARS || {})) window.EXTCARS[id].setLod(window.EXTLOD); lab() }; mc.parentNode.insertBefore(b, mc) } }
     credits(); const st = document.getElementById("xcr");
     if (st) st.textContent = CREDITS + "  ·  extra cars: " + DEFS.filter(d => built[d.id] || (window.__CD && window.__CD[d.id])).length + "/" + DEFS.length + (lastErr ? "  ·  err: " + lastErr : "");
     if (!firstSel) { firstSel = true; try { const sc = localStorage.getItem("f2008car"), d = DEFS.find(x => x.id == sc); if (d) setTimeout(() => ensure(d).then(() => setCar(d.id)).catch(e => { lastErr = String(e && e.message || e) }), 1500) } catch (e) { } }
