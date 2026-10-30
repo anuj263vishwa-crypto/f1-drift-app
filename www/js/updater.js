@@ -20,7 +20,8 @@
         var m = /v(\d+)/.exec(j.name || "") || /v(\d+)/.exec(j.body || ""), n = m ? +m[1] : 0;
         var a = (j.assets || []).filter(function (x) { return x.name === "bundle.zip" })[0];
         var sm = /sha256=([0-9a-f]{64})/i.exec(j.body || ""), ck = sm ? sm[1].toLowerCase() : String(a && a.digest || "").replace(/^sha256:/, "").toLowerCase();
-        if (a && n > cur) { if (ck.length !== 64) { if (manual) toast("Update info adhoori (checksum nahi mila)"); return } latest = { n: n, url: a.browser_download_url, mb: Math.round(a.size / 1048576), ck: ck }; offer() }
+        var bad = 0; try { bad = +localStorage.getItem("f1bad") || 0 } catch (e) { }
+        if (a && n > cur && n !== bad) { if (ck.length !== 64) { if (manual) toast("Update info adhoori (checksum nahi mila)"); return } latest = { n: n, url: a.browser_download_url, mb: Math.round(a.size / 1048576), ck: ck }; offer() }
         else if (manual) toast("Game up to date ✅ (v" + cur + ")")
         else hide()
       })
@@ -86,5 +87,17 @@
     q.style.cssText = "display:block;margin:10px auto 4px;width:min(210px,52vw);height:auto;border-radius:12px"; mc.parentNode.insertBefore(q, mc)
   }
   addShare(); setTimeout(addShare, 1500); setTimeout(addShare, 4000);
+
+  /* safety net: if this OTA bundle never gets the game running (ready flag), go back to the previous working bundle */
+  var okGame = false, boot0 = Date.now();
+  var okT = setInterval(function () { try { if (typeof ready !== "undefined" && ready === true) { okGame = true; clearInterval(okT); try { localStorage.removeItem("f1bad") } catch (e) { } } } catch (e) { } }, 1000);
+  setTimeout(function () {
+    if (okGame) return; var c = CU(); if (!c || bundle.indexOf("OTA") !== 0) return;
+    try { localStorage.setItem("f1bad", String(cur)) } catch (e) { }
+    c.list().then(function (r) {
+      var prev = (r.bundles || []).filter(function (b) { var v = parseInt(b.version, 10); return v && v < cur && b.status !== "error" }).sort(function (a, b) { return parseInt(b.version, 10) - parseInt(a.version, 10) })[0];
+      return prev ? c.set({ id: prev.id }) : c.reset()
+    }).catch(function () { try { c.reset() } catch (e) { } })
+  }, 75000);
   window.F1Update = { check: check, version: cur }
 })();

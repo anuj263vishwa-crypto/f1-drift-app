@@ -100,19 +100,19 @@
     const d = document.createElement("div"); d.id = "xcr"; d.style.cssText = "font:10px/1.4 system-ui,sans-serif;opacity:.55;margin:10px 4px 0;text-align:center"; d.textContent = CREDITS; mc.parentNode.insertBefore(d, mc)
   }
   const built = {}, toast = t => { let e = document.getElementById("xld"); if (!e) { e = document.createElement("div"); e.id = "xld"; e.style.cssText = "position:fixed;z-index:99998;left:50%;top:18%;transform:translateX(-50%);background:rgba(14,17,24,.92);color:#fff;border:1px solid #ffffff30;border-radius:12px;padding:10px 16px;font:600 14px system-ui,sans-serif"; document.body.appendChild(e) } e.textContent = t; e.style.display = t ? "block" : "none" };
-  async function ensure(def) { if (built[def.id]) return built[def.id]; return built[def.id] = (async () => { toast("Loading " + def.btn + "…"); await new Promise(r => setTimeout(r, 60)); try { await install(def) } finally { toast("") } })() }
+  const loadData = id => new Promise((res, rej) => { if (window.__CD && window.__CD[id]) return res(); const e = document.createElement("script"); e.src = "js/lz/car_" + id + ".js"; e.onload = () => { e.remove(); res() }; e.onerror = () => rej(new Error("data file missing: " + id)); document.head.appendChild(e) });
+  async function ensure(def) { if (built[def.id]) return built[def.id]; const p = built[def.id] = (async () => { toast("Loading " + def.btn + "…"); await new Promise(r => setTimeout(r, 60)); try { await loadData(def.id); await install(def) } finally { toast("") } })(); p.catch(() => { delete built[def.id] }); return p }
   function releaseCar(id) {
     if (!id || id === "f26") return; const X = CARS[id]; if (!X || !X.c) return;
     X.c.traverse(o => { if (!o.isMesh) return; try { o.geometry.dispose() } catch (e) { }
       (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (!m) return; ["map", "emissiveMap", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "alphaMap"].forEach(k => { if (m[k] && m[k].dispose) m[k].dispose() }) }) })
   }
   let gHook = false;
-  function hookRelease() { if (gHook) return; gHook = true; const _s = window.setCar; window.setCar = function (i) { const prev = cur; _s(i); if (prev && prev !== i) releaseCar(prev) } }
+  function hookRelease() { if (gHook) return; gHook = true; const _s = window.setCar; window.setCar = function (i) { const d = DEFS.find(x => x.id === i); if (d && !CARS[i]) { ensure(d).then(() => window.setCar(i)).catch(e => { lastErr = String(e && e.message || e); toast("Car load fail: " + lastErr); setTimeout(() => toast(""), 4000) }); return } const prev = cur; _s(i); if (prev && cur === i && prev !== i) releaseCar(prev) } }
   let firstSel = false, lastErr = "";
   function sync() {   /* keeps the two buttons + status line alive no matter what the game does with #cs */
     hookRelease(); const cs = document.getElementById("cs"); if (!cs) return;
     for (const d of DEFS) {
-      if (!built[d.id] && !(window.__CD && window.__CD[d.id])) continue;
       if (!cs.querySelector('[data-c="' + d.id + '"]')) {
         const b = document.createElement("button"); b.dataset.c = d.id; b.textContent = d.btn;
         b.onclick = () => { if (ready) ensure(d).then(() => setCar(d.id)).catch(e => { lastErr = String(e && e.message || e); toast("Car load fail: " + lastErr); setTimeout(() => toast(""), 4000) }) }; cs.append(b) } }
@@ -120,7 +120,7 @@
       const lab = () => { b.textContent = "🚗 New cars detail: " + (window.EXTLOD === "hi" ? "FULL" : "LITE (faster)") }; lab();
       b.onclick = () => { window.EXTLOD = window.EXTLOD === "hi" ? "lo" : "hi"; try { localStorage.setItem("f1lod", window.EXTLOD) } catch (e) { } for (const id in (window.EXTCARS || {})) window.EXTCARS[id].setLod(window.EXTLOD); lab() }; mc.parentNode.insertBefore(b, mc) } }
     credits(); const st = document.getElementById("xcr");
-    if (st) st.textContent = CREDITS + "  ·  extra cars: " + DEFS.filter(d => built[d.id] || (window.__CD && window.__CD[d.id])).length + "/" + DEFS.length + (lastErr ? "  ·  err: " + lastErr : "");
+    if (st) st.textContent = CREDITS + "  ·  extra cars: " + Object.keys(built).length + "/" + DEFS.length + (lastErr ? "  ·  err: " + lastErr : "");
     if (!firstSel) { firstSel = true; try { const sc = localStorage.getItem("f2008car"), d = DEFS.find(x => x.id == sc); if (d) setTimeout(() => ensure(d).then(() => setCar(d.id)).catch(e => { lastErr = String(e && e.message || e) }), 1500) } catch (e) { } }
   }
   setInterval(() => { try { if (typeof ready !== "undefined" && ready === true) sync() } catch (e) { lastErr = String(e && e.message || e) } }, 1000)

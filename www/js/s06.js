@@ -495,7 +495,11 @@
         const n = Math.max(1, ex.length); fl.userData = { ms, sp, cx: cx / n, cy: cy / n, cz: cz / n }; fl.visible = false; bd.add(fl); CARS[id].fl = fl
       }
     }
+    const LZC = {}, LZB = {}, lzS = {}; let LZPOST = null;
+    function lzLoad(...n) { return Promise.all(n.map(k => lzS[k] || (lzS[k] = new Promise((res, rej) => { const e = document.createElement("script"); e.src = "js/lz/" + k + ".js"; e.onload = () => { e.remove(); res() }; e.onerror = () => rej(new Error("data file missing: " + k)); document.head.appendChild(e) })))) }
+    function lzToast(t) { let e = document.getElementById("xld"); if (!e) { e = document.createElement("div"); e.id = "xld"; e.style.cssText = "position:fixed;z-index:99998;left:50%;top:18%;transform:translateX(-50%);background:rgba(14,17,24,.92);color:#fff;border:1px solid #ffffff30;border-radius:12px;padding:10px 16px;font:600 14px system-ui,sans-serif"; document.body.appendChild(e) } e.textContent = t; e.style.display = t ? "block" : "none" }
     function setCar(id) {
+      if (!CARS[id] && LZC[id]) { if (!LZB[id]) { lzToast("Loading " + (CN[id] || id) + "…"); LZB[id] = LZC[id]().then(() => { if (LZPOST) LZPOST(id); lzToast(""); delete LZB[id]; setCar(id) }).catch(e => { lzToast("Load failed: " + (e && e.message || e)); delete LZB[id]; setTimeout(() => lzToast(""), 3500) }) } return }
       const o = car; cur = id; for (const k in CARS) CARS[k].c.visible = k == id; const X = CARS[id]; if (o && o !== X.c) { X.c.position.copy(o.position); X.c.rotation.copy(o.rotation) } car = X.c; wheels = X.wh; parts = X.pt;
       $("bcar").innerHTML = '🏎<span class="tx"> ' + CN[id] + '</span>'; $("mt").textContent = TT[id]; { const nx = ORD[(ORD.indexOf(id) + 1) % ORD.length]; $("mcar").innerHTML = '🏎 Change car<small>Now: ' + TT[id] + ' · tap for ' + TT[nx] + '</small>' }
       document.querySelectorAll("#cs button").forEach(b => b.classList.toggle("on", b.dataset.c == id)); try { localStorage.setItem("f2008car", id) } catch (e) { } refreshUI(); if (dv && typeof dvSet == "function") dvSet(true)
@@ -846,8 +850,10 @@ vec4 stkS(){
 }`).replace("#include <color_fragment>", "#include <color_fragment>\nif(sP.y>.001){vec4 sc=stkS();diffuseColor.rgb=mix(diffuseColor.rgb,sc.rgb,sc.a*sP.y);}")
     }
     function stkPatch() {
-      if (stkPatched) return; stkPatched = true;
-      for (const id in CARS) {
+      if (stkPatched) return; stkPatched = true; for (const id in CARS) stkPatchCar(id)
+    }
+    function stkPatchCar(id) {
+      {
         const X = CARS[id], wst = new Set(Object.values(X.wh).map(w => w.st));
         X.c.traverse(me => {
           if (!me.isMesh) return; for (let a = me; a && a !== X.c; a = a.parent) if (wst.has(a) || a === X.fl) return;
@@ -993,10 +999,10 @@ vec4 stkS(){
       vs.forEach(v => { const a = v.dot(u), b = v.dot(w); u0 = Math.min(u0, a); u1 = Math.max(u1, a); w0 = Math.min(w0, b); w1 = Math.max(w1, b) });
       return { n, c: u.multiplyScalar((u0 + u1) / 2).add(w.multiplyScalar((w0 + w1) / 2)).add(n.clone().multiplyScalar(m.dot(n))) }
     }
-    function dvBuild() {
+    function dvBuild(only) {
       const up = new THREE.Vector3(0, 0, 1);
       for (const id in DVC) {
-        const X = CARS[id]; if (!X) continue; const q = DVC[id], bd = X.c.children[0], by = bd.position.y, rig = { q, parts: [], g: null, ratio: q.k || (q.s == "rd" ? 3.6 : 3), cuts: [] };
+        if (only && id !== only) continue; const X = CARS[id]; if (!X || X.dv) continue; const q = DVC[id], bd = X.c.children[0], by = bd.position.y, rig = { q, parts: [], g: null, ratio: q.k || (q.s == "rd" ? 3.6 : 3), cuts: [] };
         if (q.b) bd.children.forEach(og => { if (og.name && q.b.test(og.name)) rig.parts.push(og) });
         if (q.x) { /* wheel baked into the body mesh: cut those triangles out into their own spinnable group */
           const bx = q.x, ng = new THREE.Group(); ng.name = "dvx"; let any = false;
@@ -1038,14 +1044,26 @@ vec4 stkS(){
       $("bdv").classList.toggle("on", dv); $("bdv").innerHTML = (dv ? "🚘" : "👁") + '<span class="tx"> ' + (dv ? "Chase view" : "Driver view") + "</span>"
     };
     (async () => {
-      const O2 = await unz(D2), O3 = await unz(D3), O4 = await unz(D4), O7 = dec6(await unzB(D7)), O8 = dec6(await unzB(D8)), O9 = fixBol(dec6(await unzB(D9))), O11 = dec6(await unzB(D11)), O12 = dec6(await unzB(D12)), O13 = dec13(await unzB(D13)).filter(o => !/^(racer|shoes\.|helmet|shell|vizor|seatbelts_new_driver)/.test(o.n)).map(o => { if (/^(gearbox_cover|exhaust_cover|rear_body_inner)$/.test(o.n) && o.m["Carbon_Fiber_no_UV__rough"]) { o.m["Carbon_Fiber_no_UV_"] = o.m["Carbon_Fiber_no_UV__rough"]; delete o.m["Carbon_Fiber_no_UV__rough"] } return o }), O14 = dec17(await unzB(D14)), O15 = dec17(await unzB(D15)), O16 = dec17(await unzB(D16)), O17 = dec17(await unzB(D17)), O18 = dec17(await unzB(D18));
-      const W1 = { tire_lf: "fl", fer_brake_fl: "fl", fer_cov_lf: "fl", tire_lr: "fr", fer_brake_fr: "fr", fer_cov_fr: "fr", tire_rf: "rl", fer_brake_rl: "rl", fer_cov_rl: "rl", tire_rr: "rr", fer_brake_rr: "rr", fer_cov_rr: "rr" }, W2 = {}, V2 = {};
-      for (const p of ["fl", "fr", "rl", "rr"]) { W2["f60_tire_" + p] = p; W2["fer_brake_" + p] = p; W2["fer_cov_" + p] = p; V2["fer_cov_" + p] = ["cov", "on"] }
-      bld("f60", O2, W2, "f60_tire_", mat2, V2, .045); bld("f26", O3, { f26_w_fl: "fl", f26_w_fr: "fr", f26_w_rl: "rl", f26_w_rr: "rr" }, "f26_w_", mat3, {}, .023); bld("rb", splitCov(O4, "rb_body", "rb_w_", "rb_c_", "cc"), { rb_w_fl: "fl", rb_w_fr: "fr", rb_w_rl: "rl", rb_w_rr: "rr", rb_c_fl: "fl", rb_c_fr: "fr" }, "rb_w_", mat3, {}, 0); bld("rc13", O7, { rc_w_fl: "fl", rc_w_fr: "fr", rc_w_rl: "rl", rc_w_rr: "rr" }, "rc_w_", mat7, {}, .047); bld("c44", splitCov(O8, "c_body", "c_w_", "c_c_", "cyl"), { c_w_fl: "fl", c_w_fr: "fr", c_w_rl: "rl", c_w_rr: "rr", c_c_fl: "fl", c_c_fr: "fr" }, "c_w_", mat8, {}, 0); bld("bol", O9, { bol_w_fl: "fl", bol_w_fr: "fr", bol_w_rl: "rl", bol_w_rr: "rr" }, "bol_w_", mat9, {}, 0); bld("cf", O11, { cf_w_fl: "fl", cf_w_fr: "fr", cf_w_rl: "rl", cf_w_rr: "rr", cf_r_fl: "fl", cf_r_fr: "fr", cf_r_rl: "rl", cf_r_rr: "rr", cf_c_fl: "fl", cf_c_fr: "fr", cf_c_rl: "rl", cf_c_rr: "rr" }, "cf_w_", mat11, {}, 0); bld("pt2", O12, { pt_w_fl: "fl", pt_w_fr: "fr", pt_w_rl: "rl", pt_w_rr: "rr", pt_c_fl: "fl", pt_c_fr: "fr", pt_c_rl: "rl", pt_c_rr: "rr" }, "pt_w_", mat12, {}, 0); bld("fp", O13, {"fp_w_fl":"fl","fp_r_rim_fl":"fl","fp_r_vent_fl":"fl","fp_r_cov_fl":"fl","fp_r_nab_fl":"fl","fp_r_nut_fl":"fl","fp_r_brk_fl":"fl","fp_c_duct_fl":"fl","fp_c_ductin_fl":"fl","fp_c_fins_fl":"fl","fp_w_fr":"fr","fp_r_rim_fr":"fr","fp_r_vent_fr":"fr","fp_r_cov_fr":"fr","fp_r_nab_fr":"fr","fp_r_nut_fr":"fr","fp_r_brk_fr":"fr","fp_c_duct_fr":"fr","fp_c_ductin_fr":"fr","fp_c_fins_fr":"fr","fp_w_rl":"rl","fp_r_rim_rl":"rl","fp_r_vent_rl":"rl","fp_r_cov_rl":"rl","fp_r_nab_rl":"rl","fp_r_nut_rl":"rl","fp_r_brk_rl":"rl","fp_c_duct_rl":"rl","fp_c_blades_rl":"rl","fp_w_rr":"rr","fp_r_rim_rr":"rr","fp_r_vent_rr":"rr","fp_r_cov_rr":"rr","fp_r_nab_rr":"rr","fp_r_nut_rr":"rr","fp_r_brk_rr":"rr","fp_c_duct_rr":"rr","fp_c_blades_rr":"rr"}, "fp_w_", mat13, {}, 0); bld("w17", O14, { w17_w_fl: "fl", w17_w_fr: "fr", w17_w_rl: "rl", w17_w_rr: "rr", w17_c_fl: "fl", w17_c_fr: "fr", w17_c_rl: "rl", w17_c_rr: "rr" }, "w17_w_", mat14, {}, 0); CARS.w17.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false }); bld("w13", O15, { w13_w_fl: "fl", w13_w_fr: "fr", w13_w_rl: "rl", w13_w_rr: "rr", w13_c_fl: "fl", w13_c_fr: "fr", w13_c_rl: "rl", w13_c_rr: "rr" }, "w13_w_", mat15, {}, 0); CARS.w13.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false }); bld("sb", O16, { sb_w_fl: "fl", sb_w_fr: "fr", sb_w_rl: "rl", sb_w_rr: "rr", sb_c_fl: "fl", sb_c_fr: "fr" }, "sb_w_", mat16, {}, 0); CARS.sb.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false }); bld("w20", O17, { w20_w_fl: "fl", w20_r_hub_fl: "fl", w20_r_disc_fl: "fl", w20_r_edisc_fl: "fl", w20_c_cal_fl: "fl", w20_c_logo_fl: "fl", w20_w_fr: "fr", w20_r_hub_fr: "fr", w20_r_disc_fr: "fr", w20_r_edisc_fr: "fr", w20_c_cal_fr: "fr", w20_c_logo_fr: "fr", w20_w_rl: "rl", w20_r_hub_rl: "rl", w20_r_disc_rl: "rl", w20_r_edisc_rl: "rl", w20_c_cal_rl: "rl", w20_c_logo_rl: "rl", w20_w_rr: "rr", w20_r_hub_rr: "rr", w20_r_disc_rr: "rr", w20_r_edisc_rr: "rr", w20_c_cal_rr: "rr", w20_c_logo_rr: "rr" }, "w20_w_", mat17, {}, 0); CARS.w20.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false }); bld("fe", O18, { fe_w_fl: "fl", fe_r_cover_fl: "fl", fe_r_nut_fl: "fl", fe_c_cal_fl: "fl", fe_c_up_fl: "fl", fe_c_up_fr: "fr", fe_c_up_rl: "rl", fe_c_up_rr: "rr", fe_w_fr: "fr", fe_r_cover_fr: "fr", fe_r_nut_fr: "fr", fe_c_cal_fr: "fr", fe_w_rl: "rl", fe_r_cover_rl: "rl", fe_r_nut_rl: "rl", fe_c_cal_rl: "rl", fe_w_rr: "rr", fe_r_cover_rr: "rr", fe_r_nut_rr: "rr", fe_c_cal_rr: "rr" }, "fe_w_", mat18, {}, 0); CARS.fe.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false }); {
+      /* ---- lazy car builders: data file + decode + build happen only when the car is selected ---- */
+      LZC.f60 = async () => { await lzLoad("D2", "T2"); const O2 = await unz(D2); D2 = null; const W2 = {}, V2 = {}; for (const p of ["fl", "fr", "rl", "rr"]) { W2["f60_tire_" + p] = p; W2["fer_brake_" + p] = p; W2["fer_cov_" + p] = p; V2["fer_cov_" + p] = ["cov", "on"] } bld("f60", O2, W2, "f60_tire_", mat2, V2, .045);  };
+      LZC.f26 = async () => { await lzLoad("D3", "T3"); const O3 = await unz(D3); D3 = null; bld("f26", O3, { f26_w_fl: "fl", f26_w_fr: "fr", f26_w_rl: "rl", f26_w_rr: "rr" }, "f26_w_", mat3, {}, .023);  };
+      LZC.rb = async () => { await lzLoad("D4", "T3"); const O4 = await unz(D4); D4 = null; bld("rb", splitCov(O4, "rb_body", "rb_w_", "rb_c_", "cc"), { rb_w_fl: "fl", rb_w_fr: "fr", rb_w_rl: "rl", rb_w_rr: "rr", rb_c_fl: "fl", rb_c_fr: "fr" }, "rb_w_", mat3, {}, 0);  };
+      LZC.rc13 = async () => { await lzLoad("D7", "T7"); const O7 = dec6(await unzB(D7)); D7 = null; bld("rc13", O7, { rc_w_fl: "fl", rc_w_fr: "fr", rc_w_rl: "rl", rc_w_rr: "rr" }, "rc_w_", mat7, {}, .047);  };
+      LZC.c44 = async () => { await lzLoad("D8", "T8"); const O8 = dec6(await unzB(D8)); D8 = null; bld("c44", splitCov(O8, "c_body", "c_w_", "c_c_", "cyl"), { c_w_fl: "fl", c_w_fr: "fr", c_w_rl: "rl", c_w_rr: "rr", c_c_fl: "fl", c_c_fr: "fr" }, "c_w_", mat8, {}, 0);  };
+      LZC.bol = async () => { await lzLoad("D9"); const O9 = fixBol(dec6(await unzB(D9))); D9 = null; bld("bol", O9, { bol_w_fl: "fl", bol_w_fr: "fr", bol_w_rl: "rl", bol_w_rr: "rr" }, "bol_w_", mat9, {}, 0);  };
+      LZC.cf = async () => { await lzLoad("D11"); const O11 = dec6(await unzB(D11)); D11 = null; bld("cf", O11, { cf_w_fl: "fl", cf_w_fr: "fr", cf_w_rl: "rl", cf_w_rr: "rr", cf_r_fl: "fl", cf_r_fr: "fr", cf_r_rl: "rl", cf_r_rr: "rr", cf_c_fl: "fl", cf_c_fr: "fr", cf_c_rl: "rl", cf_c_rr: "rr" }, "cf_w_", mat11, {}, 0); CARS.cf.c.traverse(me => { if (me.isMesh && me.userData.k == "glass") me.castShadow = false }); };
+      LZC.pt2 = async () => { await lzLoad("D12"); const O12 = dec6(await unzB(D12)); D12 = null; bld("pt2", O12, { pt_w_fl: "fl", pt_w_fr: "fr", pt_w_rl: "rl", pt_w_rr: "rr", pt_c_fl: "fl", pt_c_fr: "fr", pt_c_rl: "rl", pt_c_rr: "rr" }, "pt_w_", mat12, {}, 0); {
         const X = CARS.pt2; let bm = null, bn = 0; X.c.traverse(o => { if (o.isMesh) { const n = o.geometry.attributes.position.count; if (n > bn) { bn = n; bm = o } } });
         const ms = []; bm.parent.traverse(o => { if (o.isMesh) ms.push(o) }); let xi = 0;
         window.pt2Shell = () => { const x = CFG.shell == "x"; ms.forEach(me => { const u = me.userData; if (!u.m0) { u.m0 = me.material; const c = me.material.clone(); c.userData = Object.assign({}, me.material.userData); c.transparent = true; c.opacity = .16; c.depthWrite = false; u.m1 = c; M3["pt_x_" + (xi++)] = c } me.material = x ? u.m1 : u.m0; me.castShadow = !x }) }
-      } CARS.fp.c.traverse(me => { if (!me.isMesh) return; me.geometry.computeBoundingSphere(); if (me.material.transparent || me.geometry.boundingSphere.radius < .07) me.castShadow = false }); CARS.cf.c.traverse(me => { if (me.isMesh && me.userData.k == "glass") me.castShadow = false }); 
+      } };
+      LZC.fp = async () => { await lzLoad("D13"); const O13 = dec13(await unzB(D13)).filter(o => !/^(racer|shoes\.|helmet|shell|vizor|seatbelts_new_driver)/.test(o.n)).map(o => { if (/^(gearbox_cover|exhaust_cover|rear_body_inner)$/.test(o.n) && o.m["Carbon_Fiber_no_UV__rough"]) { o.m["Carbon_Fiber_no_UV_"] = o.m["Carbon_Fiber_no_UV__rough"]; delete o.m["Carbon_Fiber_no_UV__rough"] } return o }); D13 = null; bld("fp", O13, {"fp_w_fl":"fl","fp_r_rim_fl":"fl","fp_r_vent_fl":"fl","fp_r_cov_fl":"fl","fp_r_nab_fl":"fl","fp_r_nut_fl":"fl","fp_r_brk_fl":"fl","fp_c_duct_fl":"fl","fp_c_ductin_fl":"fl","fp_c_fins_fl":"fl","fp_w_fr":"fr","fp_r_rim_fr":"fr","fp_r_vent_fr":"fr","fp_r_cov_fr":"fr","fp_r_nab_fr":"fr","fp_r_nut_fr":"fr","fp_r_brk_fr":"fr","fp_c_duct_fr":"fr","fp_c_ductin_fr":"fr","fp_c_fins_fr":"fr","fp_w_rl":"rl","fp_r_rim_rl":"rl","fp_r_vent_rl":"rl","fp_r_cov_rl":"rl","fp_r_nab_rl":"rl","fp_r_nut_rl":"rl","fp_r_brk_rl":"rl","fp_c_duct_rl":"rl","fp_c_blades_rl":"rl","fp_w_rr":"rr","fp_r_rim_rr":"rr","fp_r_vent_rr":"rr","fp_r_cov_rr":"rr","fp_r_nab_rr":"rr","fp_r_nut_rr":"rr","fp_r_brk_rr":"rr","fp_c_duct_rr":"rr","fp_c_blades_rr":"rr"}, "fp_w_", mat13, {}, 0); CARS.fp.c.traverse(me => { if (!me.isMesh) return; me.geometry.computeBoundingSphere(); if (me.material.transparent || me.geometry.boundingSphere.radius < .07) me.castShadow = false }); };
+      LZC.w17 = async () => { await lzLoad("D14", "T14"); const O14 = dec17(await unzB(D14)); D14 = null; bld("w17", O14, { w17_w_fl: "fl", w17_w_fr: "fr", w17_w_rl: "rl", w17_w_rr: "rr", w17_c_fl: "fl", w17_c_fr: "fr", w17_c_rl: "rl", w17_c_rr: "rr" }, "w17_w_", mat14, {}, 0); CARS.w17.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false });  };
+      LZC.w13 = async () => { await lzLoad("D15", "T15"); const O15 = dec17(await unzB(D15)); D15 = null; bld("w13", O15, { w13_w_fl: "fl", w13_w_fr: "fr", w13_w_rl: "rl", w13_w_rr: "rr", w13_c_fl: "fl", w13_c_fr: "fr", w13_c_rl: "rl", w13_c_rr: "rr" }, "w13_w_", mat15, {}, 0); CARS.w13.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false });  };
+      LZC.sb = async () => { await lzLoad("D16", "T16"); const O16 = dec17(await unzB(D16)); D16 = null; bld("sb", O16, { sb_w_fl: "fl", sb_w_fr: "fr", sb_w_rl: "rl", sb_w_rr: "rr", sb_c_fl: "fl", sb_c_fr: "fr" }, "sb_w_", mat16, {}, 0); CARS.sb.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false });  };
+      LZC.w20 = async () => { await lzLoad("D17", "T17"); const O17 = dec17(await unzB(D17)); D17 = null; bld("w20", O17, { w20_w_fl: "fl", w20_r_hub_fl: "fl", w20_r_disc_fl: "fl", w20_r_edisc_fl: "fl", w20_c_cal_fl: "fl", w20_c_logo_fl: "fl", w20_w_fr: "fr", w20_r_hub_fr: "fr", w20_r_disc_fr: "fr", w20_r_edisc_fr: "fr", w20_c_cal_fr: "fr", w20_c_logo_fr: "fr", w20_w_rl: "rl", w20_r_hub_rl: "rl", w20_r_disc_rl: "rl", w20_r_edisc_rl: "rl", w20_c_cal_rl: "rl", w20_c_logo_rl: "rl", w20_w_rr: "rr", w20_r_hub_rr: "rr", w20_r_disc_rr: "rr", w20_r_edisc_rr: "rr", w20_c_cal_rr: "rr", w20_c_logo_rr: "rr" }, "w20_w_", mat17, {}, 0); CARS.w20.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false });  };
+      LZC.fe = async () => { await lzLoad("D18", "T18"); const O18 = dec17(await unzB(D18)); D18 = null; bld("fe", O18, { fe_w_fl: "fl", fe_r_cover_fl: "fl", fe_r_nut_fl: "fl", fe_c_cal_fl: "fl", fe_c_up_fl: "fl", fe_c_up_fr: "fr", fe_c_up_rl: "rl", fe_c_up_rr: "rr", fe_w_fr: "fr", fe_r_cover_fr: "fr", fe_r_nut_fr: "fr", fe_c_cal_fr: "fr", fe_w_rl: "rl", fe_r_cover_rl: "rl", fe_r_nut_rl: "rl", fe_c_cal_rl: "rl", fe_w_rr: "rr", fe_r_cover_rr: "rr", fe_r_nut_rr: "rr", fe_c_cal_rr: "rr" }, "fe_w_", mat18, {}, 0); CARS.fe.c.traverse(me => { if (me.isMesh && me.material.transparent) me.castShadow = false });  };
+      await LZC.f26();
       car = CARS.f26.c; wheels = CARS.f26.wh; parts = CARS.f26.pt;
       const sh = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 6).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: mkTex(64, 64, (g, w, h) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 32); r.addColorStop(0, "rgba(0,0,0,.6)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, w, h) }), transparent: true, depthWrite: false })); sh.position.y = .04; sh.position.z = -.2; car.add(sh);
       sh.visible = false;
@@ -1055,7 +1073,7 @@ vec4 stkS(){
           const g = new THREE.Group(), pl = (w, l, x, z, o) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2), csM); m.position.set(x, .012, z); m.renderOrder = 2; m.scale.setScalar(o || 1); g.add(m) };
           pl(2.3, 5.2, 0, -.1, 1); for (const k in wh) { const p = wh[k].st.position; pl(.62, 1.25, p.x, p.z, 1) } return g
         };
-      for (const id in CARS) CARS[id].c.add(mkCS(CARS[id].wh));
+      LZPOST = id => { CARS[id].c.add(mkCS(CARS[id].wh)); dvBuild(id); if (stkPatched) stkPatchCar(id); applyCfg() }; LZPOST("f26");
       applyCfg(); car.updateMatrixWorld(true);
       {
         const cat = {}, v = new THREE.Vector3();
@@ -1070,7 +1088,7 @@ vec4 stkS(){
         const gm = new THREE.MeshStandardMaterial({ color: 0x7fd8ff, emissive: 0x1a6fa0, transparent: true, opacity: .42, depthWrite: false, roughness: .5 });
         ghostG = new THREE.Group(); MG.forEach(m => { if (m.key != "FERWIND") ghostG.add(new THREE.Mesh(m.g, gm)) }); ghostG.visible = false; S.add(ghostG)
       }
-      dvBuild(); loadGhost(); loadCfg(); applyCfg(); buildUI(); buildStk(); stkLoad(); { let sc = "f60"; try { sc = localStorage.getItem("f2008car") || sc } catch (e) { } setCar(CARS[sc] ? sc : "f60") } ready = true; $("load").remove(); go("show"); menuOn = true; $("menu").style.display = "grid";
+      dvBuild(); loadGhost(); loadCfg(); applyCfg(); buildUI(); buildStk(); stkLoad(); { let sc = "f60"; try { sc = localStorage.getItem("f2008car") || sc } catch (e) { } if (!CARS[sc] && !LZC[sc]) sc = "f60"; if (!CARS[sc]) { await LZC[sc](); LZPOST(sc) } setCar(sc) } ready = true; $("load").remove(); go("show"); menuOn = true; $("menu").style.display = "grid";
     })().catch(e => { const l = $("load"); if (l) l.textContent = "Load error: " + (e && e.message || e) });
 
     /* ---------- NATURE MODE ---------- */
@@ -1496,10 +1514,10 @@ vec4 stkS(){
     function hud() {
       if (mode == "show") { sfx(0, 0, 0); return } const kmh = Math.round(Math.hypot(P.vx, P.vz) * 3.6), fv = P.vx * Math.sin(P.h) + P.vz * Math.cos(P.h), gw = 300 / 8;
       const up_ = K.KeyW || K.ArrowUp, gm_ = GMAX[Math.max(0, P.gn - 1)], rr = P.gn > 0 ? Math.min(1.05, Math.max(0, fv) / gm_) : 0, rpm = P.gn > 0 ? .18 + .82 * Math.min(1, rr) : (up_ ? .75 : .15);
-      $("sv").textContent = kmh; $("gr").textContent = fv < -.5 ? "R" : P.gn == 0 ? "N" : P.gn;
-      const rbE = $("rb"); rbE.style.width = (8 + 92 * rpm) + "%"; rbE.style.background = (P.gn > 0 && rr > .94) ? "#e10600" : "";
+      if (kmh !== hud._k) { hud._k = kmh; $("sv").textContent = kmh } { const gv = fv < -.5 ? "R" : P.gn == 0 ? "N" : P.gn; if (gv !== hud._g) { hud._g = gv; $("gr").textContent = gv } }
+      const rbE = $("rb"), rbw = (8 + 92 * rpm).toFixed(1) + "%", rbc = (P.gn > 0 && rr > .94) ? "#e10600" : ""; if (rbw !== hud._w) { hud._w = rbw; rbE.style.width = rbw } if (rbc !== hud._c) { hud._c = rbc; rbE.style.background = rbc }
       let tx_ = ""; if (performance.now() < gtUntil) tx_ = gtMsg; else if (P.gn > 0 && P.gn < 8 && rr > .9 && up_ && P.sc <= 0) tx_ = "SHIFT UP \u25B2";
-      const gtE = $("gtip"); gtE.textContent = tx_; gtE.style.opacity = tx_ ? 1 : 0;
+      if (tx_ !== hud._t) { hud._t = tx_; const gtE = $("gtip"); gtE.textContent = tx_; gtE.style.opacity = tx_ ? 1 : 0 }
       sfxD(kmh / 400, up_ ? 1 : 0, Math.min(1, rpm));
       if (mode != "race" && mode != "ghost") return;
       $("lap").textContent = "LAP " + (mode == "race" ? Math.min(3, Math.max(1, Math.floor(cum / N) + 1)) + " / 3" : Math.max(1, Math.floor(cum / N) + 1)); $("tm").textContent = "TIME " + fmt(Math.max(0, clock - lapStart)); $("bt").textContent = "BEST " + fmt(best);
