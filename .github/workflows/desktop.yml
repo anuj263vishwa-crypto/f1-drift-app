@@ -1,0 +1,44 @@
+name: Build Desktop
+on:
+  workflow_run:
+    workflows: ["Build APK"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  desktop:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Stamp version and copy game
+        shell: bash
+        run: |
+          VER=${{ github.event.workflow_run.run_number || github.run_number }}
+          sed -i.bak "s/__VERSION__/$VER/" www/js/updater.js && rm -f www/js/updater.js.bak
+          mkdir -p desktop/www && cp -R www/. desktop/www/
+      - name: Build
+        working-directory: desktop
+        shell: bash
+        run: |
+          npm install
+          if [ "${{ runner.os }}" = "macOS" ]; then npx electron-builder --mac --x64 --arm64 --publish never; else npx electron-builder --publish never; fi
+      - name: Upload to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          FILES=(desktop/dist/*.exe desktop/dist/*.AppImage desktop/dist/*.dmg)
+          echo "uploading: ${FILES[@]}"
+          for i in 1 2 3 4 5 6; do gh release view latest >/dev/null 2>&1 && break; sleep 20; done
+          gh release upload latest "${FILES[@]}" --clobber

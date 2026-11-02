@@ -12,7 +12,7 @@
   function toast(t, ms) { show("<span>" + t + "</span>"); setTimeout(hide, ms || 3000) }
   function check(manual) {
     if (busy) return;
-    var cu = CU(); if (!cu) { if (manual) toast("Updates sirf installed app mein chalte hain"); return }
+    var cu = CU(), desk = window.F1Desktop; if (!cu && !desk) { if (manual) toast("Updates sirf installed app mein chalte hain"); return }
     if (manual) toast("Checking for update…", 8000);
     fetch("https://api.github.com/repos/" + REPO + "/releases/tags/latest", { headers: { Accept: "application/vnd.github+json" } })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json() })
@@ -21,13 +21,14 @@
         var a = (j.assets || []).filter(function (x) { return x.name === "bundle.zip" })[0];
         var sm = /sha256=([0-9a-f]{64})/i.exec(j.body || ""), ck = sm ? sm[1].toLowerCase() : String(a && a.digest || "").replace(/^sha256:/, "").toLowerCase();
         var bad = 0; try { bad = +localStorage.getItem("f1bad") || 0 } catch (e) { }
-        if (a && n > cur && n !== bad) { if (ck.length !== 64) { if (manual) toast("Update info adhoori (checksum nahi mila)"); return } latest = { n: n, url: a.browser_download_url, mb: Math.round(a.size / 1048576), ck: ck }; offer() }
+        if ((a || desk) && n > cur && n !== bad) { if (desk) { latest = { n: n, desk: 1 }; offer(); return } if (ck.length !== 64) { if (manual) toast("Update info adhoori (checksum nahi mila)"); return } latest = { n: n, url: a.browser_download_url, mb: Math.round(a.size / 1048576), ck: ck }; offer() }
         else if (manual) toast("Game up to date ✅ (v" + cur + ")")
         else hide()
       })
       .catch(function (e) { if (manual) toast("Update check fail — net ya repo public check karo") })
   }
   function offer() {
+    if (latest.desk) { show("<span>🆕 New version v" + latest.n + " available</span><button id='updgo'>Download</button><button class='x' id='updno'>Later</button>"); document.getElementById("updgo").onclick = function () { window.F1Desktop.open("https://github.com/" + REPO + "/releases/latest") }; document.getElementById("updno").onclick = hide; return }
     show("<span>🆕 Update v" + latest.n + " (" + latest.mb + " MB)</span><button id='updgo'>Update</button><button class='x' id='updno'>Later</button>");
     document.getElementById("updgo").onclick = go; document.getElementById("updno").onclick = hide
   }

@@ -1,0 +1,20 @@
+{
+  "name": "f1-drift",
+  "productName": "F1 Drift",
+  "version": "1.0.0",
+  "description": "F1 Drift - open world / race / drift racing game",
+  "author": { "name": "F1 Drift", "email": "noreply@example.com" },
+  "main": "main.js",
+  "devDependencies": { "electron": "33.2.1", "electron-builder": "25.1.8" },
+  "build": {
+    "appId": "com.f1drift.desktop",
+    "productName": "F1 Drift",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "package.json", "www/**/*"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "F1-Drift-Setup.${ext}" },
+    "portable": { "artifactName": "F1-Drift-Portable.${ext}" },
+    "linux": { "target": ["AppImage"], "icon": "build/icon.png", "category": "Game", "artifactName": "F1-Drift.${ext}" },
+    "mac": { "target": ["dmg"], "icon": "build/icon.png", "category": "public.app-category.racing-games", "artifactName": "F1-Drift-mac-${arch}.${ext}" }
+  }
+}
