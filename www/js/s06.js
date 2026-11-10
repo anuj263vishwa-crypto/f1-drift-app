@@ -496,7 +496,7 @@
       }
     }
     const LZC = {}, LZB = {}, lzS = {}; let LZPOST = null;
-    function lzLoad(...n) { return Promise.all(n.map(k => lzS[k] || (lzS[k] = new Promise((res, rej) => { const e = document.createElement("script"); e.src = "js/lz/" + k + ".js"; e.onload = () => { e.remove(); res() }; e.onerror = () => rej(new Error("data file missing: " + k)); document.head.appendChild(e) })))) }
+    function lzLoad(...n) { return Promise.all(n.map(k => window[k] != null ? Promise.resolve() : (lzS[k] || (lzS[k] = new Promise((res, rej) => { const e = document.createElement("script"); e.src = "js/lz/" + k + ".js"; e.onload = () => { e.remove(); delete lzS[k]; res() }; e.onerror = () => { delete lzS[k]; rej(new Error("data file missing: " + k)) }; document.head.appendChild(e) }))))) }
     function lzToast(t) { let e = document.getElementById("xld"); if (!e) { e = document.createElement("div"); e.id = "xld"; e.style.cssText = "position:fixed;z-index:99998;left:50%;top:18%;transform:translateX(-50%);background:rgba(14,17,24,.92);color:#fff;border:1px solid #ffffff30;border-radius:12px;padding:10px 16px;font:600 14px system-ui,sans-serif"; document.body.appendChild(e) } e.textContent = t; e.style.display = t ? "block" : "none" }
     function setCar(id) {
       if (!CARS[id] && LZC[id]) { if (!LZB[id]) { lzToast("Loading " + (CN[id] || id) + "…"); LZB[id] = LZC[id]().then(() => { if (LZPOST) LZPOST(id); lzToast(""); delete LZB[id]; setCar(id) }).catch(e => { lzToast("Load failed: " + (e && e.message || e)); delete LZB[id]; setTimeout(() => lzToast(""), 3500) }) } return }
@@ -1088,7 +1088,8 @@ vec4 stkS(){
         const gm = new THREE.MeshStandardMaterial({ color: 0x7fd8ff, emissive: 0x1a6fa0, transparent: true, opacity: .42, depthWrite: false, roughness: .5 });
         ghostG = new THREE.Group(); MG.forEach(m => { if (m.key != "FERWIND") ghostG.add(new THREE.Mesh(m.g, gm)) }); ghostG.visible = false; S.add(ghostG)
       }
-      dvBuild(); loadGhost(); loadCfg(); applyCfg(); buildUI(); buildStk(); stkLoad(); { let sc = "f60"; try { sc = localStorage.getItem("f2008car") || sc } catch (e) { } if (!CARS[sc] && !LZC[sc]) sc = "f60"; if (!CARS[sc]) { await LZC[sc](); LZPOST(sc) } setCar(sc) } ready = true; $("load").remove(); go("show"); menuOn = true; $("menu").style.display = "grid";
+      dvBuild(); loadGhost(); loadCfg(); applyCfg(); buildUI(); buildStk(); stkLoad(); { let sc = "f60"; try { sc = localStorage.getItem("f2008car") || sc } catch (e) { } if (!CARS[sc] && !LZC[sc]) sc = "f60"; if (!CARS[sc]) { await LZC[sc](); LZPOST(sc) } setCar(sc) } { while (document.getElementById("plc")) { const a = window.__plShownAt, n = performance.now(); if (a ? n - a > 2300 : n > 5000) break; if (n > 12000) break; await new Promise(r => setTimeout(r, 100)) } }   /* keep the W17 loading screen visible for a moment */
+      ready = true; $("load").remove(); go("show"); menuOn = true; $("menu").style.display = "grid";
     })().catch(e => { const l = $("load"); if (l) l.textContent = "Load error: " + (e && e.message || e) });
 
     /* ---------- NATURE MODE ---------- */

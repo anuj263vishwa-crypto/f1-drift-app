@@ -925,7 +925,7 @@ setTimeout(function(){if(!isFs())toast('\u26F6 Full screen ke liye upar wala but
     try {
       var c2 = document.createElement("canvas"); c2.id = "plc"; c2.style.width = cw + "px"; c2.style.height = ch + "px"; c2.width = Math.round(cw * dpr); c2.height = Math.round(ch * dpr);
       cv.parentNode.replaceChild(c2, cv); cv = c2;
-      local = plRun(window.THREE, cv, cw, ch, dpr, MODEL);
+      local = plRun(window.THREE, cv, cw, ch, dpr, MODEL); window.__plShownAt = performance.now();
     } catch (e) { noGL() }
   }
   function start() {
@@ -936,7 +936,7 @@ setTimeout(function(){if(!isFs())toast('\u26F6 Full screen ke liye upar wala but
         blobUrl = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
         worker = new Worker(blobUrl);
         var off = cv.transferControlToOffscreen();
-        worker.onmessage = function (e) { if (e.data && e.data.fail) { try { worker.terminate() } catch (x) { } worker = null; mainThread() } };
+        worker.onmessage = function (e) { if (e.data && e.data.ok) window.__plShownAt = performance.now(); if (e.data && e.data.fail) { try { worker.terminate() } catch (x) { } worker = null; mainThread() } };
         worker.onerror = function () { try { worker.terminate() } catch (x) { } worker = null; mainThread() };
         worker.postMessage({ canvas: off, w: cw, h: ch, dpr: dpr, model: MODEL }, [off]);
         return;
@@ -995,11 +995,12 @@ setTimeout(function(){if(!isFs())toast('\u26F6 Full screen ke liye upar wala but
     if (document.getElementById("plc")) return;
     clearInterval(iv);
     try { if (worker) { worker.postMessage({ stop: 1 }); worker.terminate() } if (local) local.stop(); if (blobUrl) URL.revokeObjectURL(blobUrl) } catch (e) { }
-    window.__pl = null; window.__plGo = null;
+    window.__pl = null; window.__plGo = null; window.D14 = null; window.T14 = null;   /* free the W17 preloader data; the W17 car reloads it on demand */
   }, 300);
 })();
 </script>
-<script src="js/s01.js"></script>
+<script src="js/lz/D14.js"></script>
+<script src="js/lz/T14.js"></script>
 <script>window.__plGo&&__plGo()</script>
 
   <script src="js/s02.js"></script>
