@@ -1,3 +1,5 @@
+<p align="center"><img src="www/img/car.jpg" alt="F1 Drift" width="720"></p>
+
 # 🏎️ F1 Drift
 
 Fast open-world / race / drift racing game for Android – nitro boost, drift score, 14+ cars, day/night, rain.
