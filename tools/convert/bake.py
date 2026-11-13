@@ -1,4 +1,5 @@
-import json,struct,numpy as np,sys
+import json,struct,numpy as np,sys,os
+SCALE=float(os.environ.get('F1_SCALE','1'))
 sys.path.insert(0,'/tmp/z')
 from glbinfo import load
 CT={5120:np.int8,5121:np.uint8,5122:np.int16,5123:np.uint16,5125:np.uint32,5126:np.float32}
@@ -29,7 +30,7 @@ def walk(js,bn):
     N=js['nodes']; out=[]
     def rec(i,M,path):
         n=N[i]; W=M@nmat(n); p=path+[n.get('name','')]
-        if 'mesh' in n: out.append((i,p,W,n['mesh']))
+        if 'mesh' in n: out.append((i,p,(np.diag([SCALE,SCALE,SCALE,1.0])@W) if SCALE!=1 else W,n['mesh']))
         for c in n.get('children',[]): rec(c,W,p)
     for r in js['scenes'][js.get('scene',0)]['nodes']: rec(r,np.eye(4),[])
     return out

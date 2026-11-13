@@ -5,11 +5,12 @@ Repo: `github.com/anuj263vishwa-crypto/f1-drift-app` (public – required for in
 
 ## ▶ Current status (update this block after every milestone)
 - **Latest release: v33** (commit `235615a`) – APK 76 MB, OTA bundle 53 MB, desktop installers (Windows setup+portable, Linux AppImage, macOS arm64+x64) all attached to release tag `latest`.
-- Working: 21 selectable cars (14 original + AMG One + Lambo V12 + 6 external), lazy loading, nitro/drift score, 5 AI cars, QR/share/update menu, desktop app, new artwork (Mercedes F1 drift picture) as icon/splash/banner.
+- Working: 22 selectable cars (14 original + AMG One + Lambo V12 + 7 external: RB22, GT3, Jesko, FXX-K, Furai, Apollo, Devel 16), lazy loading, nitro/drift score, 5 AI cars, QR/share/update menu, desktop app, new artwork (Mercedes F1 drift picture) as icon/splash/banner.
 - Owner's phone feedback after v33 is **not in yet** (FPS, wheel wobble on Jesko/Apollo after the camber fix, loading-screen W17, new icon).
 - Open ideas: perfect start + coins/rewards, "Lite world" (fewer trees/buildings), auto-update for the desktop app (today it only opens the release page), more CC BY/CC0 cars, a second game in its own repo.
 
 ## Changelog (newest first)
+- v34: **Devel Sixteen 2022** added (CC BY 4.0, xvirusxvirus50): `tools/convert/run_devel.py` (needs `F1_SCALE=100`, model comes in 0.01-scaled units; wheels/calipers by node name `_DWheel_*`/`Calliper_*`, wheel axle from flat sub-meshes, steering wheel = connected components of the interior mesh near the hub, twin exhausts at x=±0.217). `cars_ext.js` now wraps `setCar` immediately at load (a direct `setCar("<ext id>")` right after `ready` crashed before).
 - v33: removed duplicate `assets/splash-dark.png` (APK 92→76 MB).
 - v32: new artwork everywhere (square `icon-only` 1024, adaptive `icon-foreground/background`, 2732 `splash`, `desktop/build/icon.png`, README header). Originals kept in `assets/source/`.
 - v31: loading screen W17 fixed – the W17 preloader reads globals `D14`/`T14`, which lazy loading had moved away (fallback = plain wheel). `index.html` now loads `js/lz/D14.js` + `T14.js` before `__plGo()`, frees them after the loader closes; `lzLoad` reloads freed data. Loader stays visible ~2.3 s after the W17 appears (`window.__plShownAt`).

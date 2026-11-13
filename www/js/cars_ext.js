@@ -10,9 +10,10 @@
     { id: "jesko", btn: "JESKO", title: "KOENIGSEGG JESKO", ratio: 3.2 },
     { id: "fxxk", btn: "FXX-K EVO", title: "FERRARI FXX-K EVO", ratio: 3.2 },
     { id: "furai", btn: "FURAI", title: "MAZDA FURAI", ratio: 3.2 },
-    { id: "apollo", btn: "APOLLO IE", title: "APOLLO INTENSA EMOZIONE", ratio: 3.2 }
+    { id: "apollo", btn: "APOLLO IE", title: "APOLLO INTENSA EMOZIONE", ratio: 3.2 },
+    { id: "devel", btn: "DEVEL 16", title: "DEVEL SIXTEEN 2022", ratio: 3.2 }
   ];
-  const CREDITS = "Models (CC BY 4.0, Sketchfab): RB22 – Dave Love · AMG GT3 Evo – vecarz · Jesko, FXX-K Evo, Furai, Apollo IE – kevin (sohyalebret)";
+  const CREDITS = "Models (CC BY 4.0, Sketchfab): RB22 – Dave Love · AMG GT3 Evo – vecarz · Jesko, FXX-K Evo, Furai, Apollo IE – kevin (sohyalebret) · Devel Sixteen – xvirusxvirus50";
   const b64u8 = b => { const s = atob(b), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u };
   async function inflate(b64) { return await new Response(new Blob([b64u8(b64)]).stream().pipeThrough(new DecompressionStream("gzip"))).json() }
   const dq = (b, T) => new T(b64u8(b).buffer);
@@ -124,4 +125,5 @@
     if (!firstSel) { firstSel = true; try { const sc = localStorage.getItem("f2008car"), d = DEFS.find(x => x.id == sc); if (d) setTimeout(() => ensure(d).then(() => setCar(d.id)).catch(e => { lastErr = String(e && e.message || e) }), 1500) } catch (e) { } }
   }
   setInterval(() => { try { if (typeof ready !== "undefined" && ready === true) sync() } catch (e) { lastErr = String(e && e.message || e) } }, 1000)
+  try { hookRelease() } catch (e) { }   /* wrap setCar right away (not only after ready) */
 })();
