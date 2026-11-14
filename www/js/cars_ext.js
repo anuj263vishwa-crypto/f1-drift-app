@@ -60,10 +60,10 @@
       if (g.sw) g.sw.prims.forEach(p => mesh(p, swSp, lod)) }
     /* contact shadow blob */
     { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const g = cv.getContext("2d"), r = g.createRadialGradient(32, 32, 1, 32, 32, 32);
-      r.addColorStop(0, "rgba(0,0,0,.85)"); r.addColorStop(.55, "rgba(0,0,0,.4)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+      r.addColorStop(0, "rgba(0,0,0,.98)"); r.addColorStop(.5, "rgba(0,0,0,.82)"); r.addColorStop(.78, "rgba(0,0,0,.4)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, 64, 64);
       const csM = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }), gg = new THREE.Group();
       const pl = (w, l, x, z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2), csM); m.position.set(x, .012, z); m.renderOrder = 2; gg.add(m) };
-      pl(maxX * 2 + .5, zF - zR + 2.4, 0, (zF + zR) / 2); for (const k in wh) { const p = wh[k].st.position; pl(.6, 1.2, p.x, p.z) } c.add(gg) }
+      pl(maxX * 2 + .5, zF - zR + 2.4, 0, (zF + zR) / 2); pl(maxX * 2 - .3, zF - zR + 1.0, 0, (zF + zR) / 2); for (const k in wh) { const p = wh[k].st.position; pl(.6, 1.2, p.x, p.z) } c.add(gg) }
     /* booster flame: ONLY from the model's own tailpipe(s)  D.ex = [[x,y,z,diameter_m]] , blowing out towards -Z */
     const fl = new THREE.Group(); fl.userData = { ms: [], sp: [], cx: 0, cy: .4, cz: -1.4 }; fl.visible = false; bd.add(fl);
     { let cx = 0, cy = 0, cz = 0;

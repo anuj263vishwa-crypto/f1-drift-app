@@ -498,9 +498,19 @@
     const LZC = {}, LZB = {}, lzS = {}; let LZPOST = null;
     function lzLoad(...n) { return Promise.all(n.map(k => window[k] != null ? Promise.resolve() : (lzS[k] || (lzS[k] = new Promise((res, rej) => { const e = document.createElement("script"); e.src = "js/lz/" + k + ".js"; e.onload = () => { e.remove(); delete lzS[k]; res() }; e.onerror = () => { delete lzS[k]; rej(new Error("data file missing: " + k)) }; document.head.appendChild(e) }))))) }
     function lzToast(t) { let e = document.getElementById("xld"); if (!e) { e = document.createElement("div"); e.id = "xld"; e.style.cssText = "position:fixed;z-index:99998;left:50%;top:18%;transform:translateX(-50%);background:rgba(14,17,24,.92);color:#fff;border:1px solid #ffffff30;border-radius:12px;padding:10px 16px;font:600 14px system-ui,sans-serif"; document.body.appendChild(e) } e.textContent = t; e.style.display = t ? "block" : "none" }
+    function groundFix(id) {   /* make every tyre touch the ground exactly (some models sit a few mm/cm above or below it) */
+      const X = CARS[id]; if (!X || X._gf || !X.wh) return; X._gf = 1;
+      try {
+        const p = X.c.position.clone(), r = X.c.rotation.clone(), sp0 = {}; X.c.position.set(0, 0, 0); X.c.rotation.set(0, 0, 0);
+        for (const k in X.wh) { const w = X.wh[k]; if (w.y0 === undefined) continue; sp0[k] = w.sp.rotation.x; w.sp.rotation.x = 0; w.st.scale.setScalar(1); w.st.position.y = w.y0 }
+        X.c.updateMatrixWorld(true);
+        for (const k in X.wh) { const w = X.wh[k]; if (w.y0 === undefined) continue; const b = new THREE.Box3().setFromObject(w.sp).min.y; if (Math.abs(b) > .0008 && Math.abs(b) < .06) w.y0 -= b; w.sp.rotation.x = sp0[k] || 0; w.st.position.y = w.y0 }
+        X.c.position.copy(p); X.c.rotation.copy(r); X.c.updateMatrixWorld(true); applyCfg()
+      } catch (e) { console.error("groundFix", id, e) }
+    }
     function setCar(id) {
       if (!CARS[id] && LZC[id]) { if (!LZB[id]) { lzToast("Loading " + (CN[id] || id) + "…"); LZB[id] = LZC[id]().then(() => { if (LZPOST) LZPOST(id); lzToast(""); delete LZB[id]; setCar(id) }).catch(e => { lzToast("Load failed: " + (e && e.message || e)); delete LZB[id]; setTimeout(() => lzToast(""), 3500) }) } return }
-      const o = car; cur = id; for (const k in CARS) CARS[k].c.visible = k == id; const X = CARS[id]; if (o && o !== X.c) { X.c.position.copy(o.position); X.c.rotation.copy(o.rotation) } car = X.c; wheels = X.wh; parts = X.pt;
+      groundFix(id); const o = car; cur = id; for (const k in CARS) CARS[k].c.visible = k == id; const X = CARS[id]; if (o && o !== X.c) { X.c.position.copy(o.position); X.c.rotation.copy(o.rotation) } car = X.c; wheels = X.wh; parts = X.pt;
       $("bcar").innerHTML = '🏎<span class="tx"> ' + CN[id] + '</span>'; $("mt").textContent = TT[id]; { const nx = ORD[(ORD.indexOf(id) + 1) % ORD.length]; $("mcar").innerHTML = '🏎 Change car<small>Now: ' + TT[id] + ' · tap for ' + TT[nx] + '</small>' }
       document.querySelectorAll("#cs button").forEach(b => b.classList.toggle("on", b.dataset.c == id)); try { localStorage.setItem("f2008car", id) } catch (e) { } refreshUI(); if (dv && typeof dvSet == "function") dvSet(true)
     }
@@ -1067,11 +1077,11 @@ vec4 stkS(){
       car = CARS.f26.c; wheels = CARS.f26.wh; parts = CARS.f26.pt;
       const sh = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 6).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: mkTex(64, 64, (g, w, h) => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 32); r.addColorStop(0, "rgba(0,0,0,.6)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, w, h) }), transparent: true, depthWrite: false })); sh.position.y = .04; sh.position.z = -.2; car.add(sh);
       sh.visible = false;
-      const csT = mkTex(64, 64, (g, w, h) => { const r = g.createRadialGradient(32, 32, 1, 32, 32, 32); r.addColorStop(0, "rgba(0,0,0,.85)"); r.addColorStop(.55, "rgba(0,0,0,.4)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, w, h) }),
+      const csT = mkTex(64, 64, (g, w, h) => { const r = g.createRadialGradient(32, 32, 1, 32, 32, 32); r.addColorStop(0, "rgba(0,0,0,.98)"); r.addColorStop(.5, "rgba(0,0,0,.82)"); r.addColorStop(.78, "rgba(0,0,0,.4)"); r.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = r; g.fillRect(0, 0, w, h) }),
         csM = new THREE.MeshBasicMaterial({ map: csT, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
         mkCS = wh => {
           const g = new THREE.Group(), pl = (w, l, x, z, o) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2), csM); m.position.set(x, .012, z); m.renderOrder = 2; m.scale.setScalar(o || 1); g.add(m) };
-          pl(2.3, 5.2, 0, -.1, 1); for (const k in wh) { const p = wh[k].st.position; pl(.62, 1.25, p.x, p.z, 1) } return g
+          pl(2.3, 5.2, 0, -.1, 1); pl(1.5, 3.9, 0, -.1, 1); for (const k in wh) { const p = wh[k].st.position; pl(.62, 1.25, p.x, p.z, 1) } return g
         };
       LZPOST = id => { CARS[id].c.add(mkCS(CARS[id].wh)); dvBuild(id); if (stkPatched) stkPatchCar(id); applyCfg() }; LZPOST("f26");
       applyCfg(); car.updateMatrixWorld(true);

@@ -10,6 +10,7 @@ Repo: `github.com/anuj263vishwa-crypto/f1-drift-app` (public – required for in
 - Open ideas: perfect start + coins/rewards, "Lite world" (fewer trees/buildings), auto-update for the desktop app (today it only opens the release page), more CC BY/CC0 cars, a second game in its own repo.
 
 ## Changelog (newest first)
+- v35: **ground contact + darker shadows**. `groundFix(id)` in `s06.js` runs the first time a car is selected: it measures the lowest point of each wheel (`Box3` of `wh[k].sp`, car at identity) and shifts `w.y0` so every tyre touches y=0 (measured before: Apollo front +24 mm / rear −16 mm, AMG One rear +14, Lambo ±9, W17 front +11 …; after: all ≤1 mm). Contact shadows (`csT` gradient in `s06.js`, same constants in `cars_ext.js`) are darker (centre .98 / .82 at half radius) and a second tighter body blob was added.
 - v34: **Devel Sixteen 2022** added (CC BY 4.0, xvirusxvirus50): `tools/convert/run_devel.py` (needs `F1_SCALE=100`, model comes in 0.01-scaled units; wheels/calipers by node name `_DWheel_*`/`Calliper_*`, wheel axle from flat sub-meshes, steering wheel = connected components of the interior mesh near the hub, twin exhausts at x=±0.217). `cars_ext.js` now wraps `setCar` immediately at load (a direct `setCar("<ext id>")` right after `ready` crashed before).
 - v33: removed duplicate `assets/splash-dark.png` (APK 92→76 MB).
 - v32: new artwork everywhere (square `icon-only` 1024, adaptive `icon-foreground/background`, 2732 `splash`, `desktop/build/icon.png`, README header). Originals kept in `assets/source/`.
