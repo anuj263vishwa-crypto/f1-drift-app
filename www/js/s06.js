@@ -1083,18 +1083,35 @@ vec4 stkS(){
           const g = new THREE.Group(), pl = (w, l, x, z, o) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l).rotateX(-Math.PI / 2), csM); m.position.set(x, .012, z); m.renderOrder = 2; m.scale.setScalar(o || 1); g.add(m) };
           pl(2.3, 5.2, 0, -.1, 1); pl(1.5, 3.9, 0, -.1, 1); for (const k in wh) { const p = wh[k].st.position; pl(.62, 1.25, p.x, p.z, 1) } return g
         };
-      LZPOST = id => { CARS[id].c.add(mkCS(CARS[id].wh)); dvBuild(id); if (stkPatched) stkPatchCar(id); applyCfg() }; LZPOST("f26");
+      LZPOST = id => { CARS[id].c.add(mkCS(CARS[id].wh)); dvBuild(id); if (stkPatched) stkPatchCar(id); applyCfg() }; LZPOST("f26"); groundFix("f26");
       applyCfg(); car.updateMatrixWorld(true);
       {
         const cat = {}, v = new THREE.Vector3();
+        const WH = CARS.f26.wh, WKS = ["fl", "fr", "rl", "rr"], wset = new Set(); WKS.forEach(k => WH[k] && WH[k].st.traverse(o => wset.add(o)));
         car.traverse(me => {
-          if (!me.isMesh || !me.userData.k) return; const k = me.userData.k; if (/^(FERWH|LEDSL|Shaft)/.test(k)) return; for (let a = me; a && a !== car; a = a.parent)if (!a.visible) return;
+          if (!me.isMesh || !me.userData.k || wset.has(me)) return; const k = me.userData.k; if (/^(FERWH|LEDSL|Shaft)/.test(k)) return; for (let a = me; a && a !== car; a = a.parent)if (!a.visible) return;
           const key = (k.startsWith("F2008") || k == "f26livery") ? "paint" : k, g = me.geometry, pa = g.attributes.position, nr = g.attributes.normal, ix = g.index.array, mp = new Int32Array(pa.count).fill(-1), c = cat[key] || (cat[key] = { p: [], n: [], i: [], o: 0, mat: me.material }), nm = new THREE.Matrix3().getNormalMatrix(me.matrixWorld);
           for (let q = 0; q < ix.length; q++) { const j = ix[q]; if (mp[j] < 0) { mp[j] = c.o++; v.fromBufferAttribute(pa, j).applyMatrix4(me.matrixWorld); c.p.push(v.x, v.y, v.z); v.fromBufferAttribute(nr, j).applyMatrix3(nm).normalize(); c.n.push(v.x, v.y, v.z) } c.i.push(mp[j]) }
         });
         const MG = Object.keys(cat).map(key => { const c = cat[key], g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(c.p, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(c.n, 3)); g.setIndex(c.i); return { g, key, mat: c.mat } });
+        const WG = {}, inv = new THREE.Matrix4(), mm = new THREE.Matrix4(), nm3 = new THREE.Matrix3();
+        WKS.forEach(k => {
+          const w = WH[k]; if (!w) return; w.st.updateMatrixWorld(true); inv.copy(w.st.matrixWorld).invert(); const parts = { sp: {}, st: {} };
+          w.st.traverse(me => {
+            if (!me.isMesh || !me.userData.k) return; for (let a = me; a && a !== car; a = a.parent) if (!a.visible) return;
+            let under = false; for (let a = me; a; a = a.parent) if (a === w.sp) { under = true; break }
+            const cat = under ? parts.sp : parts.st, key = me.userData.k, g = me.geometry, pa = g.attributes.position, nr = g.attributes.normal, ix = g.index.array, mp = new Int32Array(pa.count).fill(-1), c = cat[key] || (cat[key] = { p: [], n: [], i: [], o: 0, mat: me.material });
+            mm.multiplyMatrices(inv, me.matrixWorld); nm3.getNormalMatrix(mm); const v = new THREE.Vector3();
+            for (let q = 0; q < ix.length; q++) { const j = ix[q]; if (mp[j] < 0) { mp[j] = c.o++; v.fromBufferAttribute(pa, j).applyMatrix4(mm); c.p.push(v.x, v.y, v.z); v.fromBufferAttribute(nr, j).applyMatrix3(nm3).normalize(); c.n.push(v.x, v.y, v.z) } c.i.push(mp[j]) }
+          });
+          const mk = cat => Object.keys(cat).map(key => { const c = cat[key], g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(c.p, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(c.n, 3)); g.setIndex(c.i); return { g, mat: c.mat } });
+          const spg = mk(parts.sp); let mny = 1e9; spg.forEach(m => { const pa = m.g.attributes.position; for (let q = 1; q < pa.array.length; q += 3) if (pa.array[q] < mny) mny = pa.array[q] });
+          WG[k] = { sp: spg, st: mk(parts.st), pos: w.st.position.clone(), y0: mny < 1e8 ? -mny : w.y0 }
+        });
+        const aiGeo = { WG, LR: -(WH.rl.st.position.z + WH.rr.st.position.z) / 2, LB: (WH.fl.st.position.z + WH.fr.st.position.z) / 2 - (WH.rl.st.position.z + WH.rr.st.position.z) / 2, R: (typeof WR !== "undefined" && WR.f26) || .33 };
+        window.__aiGeo = aiGeo;
         const AIC = [0xf5c518, 0x1d4ed8, 0xe8e8e8, 0xff6a00, 0x0f7a3e, 0x9aa3ad, 0x161616, 0x7b2cbf, 0x00a3b4, 0xc40a0a];
-        for (let n = 0; n < 5; n++) { const g = new THREE.Group(), pm = new THREE.MeshStandardMaterial({ color: AIC[n % 10], roughness: .35, metalness: .1, side: THREE.DoubleSide }); MG.forEach(m => { const me = new THREE.Mesh(m.g, m.key == "paint" ? pm : m.mat); me.castShadow = !!__Q.ais; g.add(me) }); g.add(sh.clone()); g.add(mkCS(CARS.f26.wh)); S.add(g); ais.push({ g, col: AIC[n % 10], s: 0, v: 0, lane: 0, tl: 0, top: 58 + rnd() * 14 }) }
+        for (let n = 0; n < 5; n++) { const g = new THREE.Group(), pm = new THREE.MeshStandardMaterial({ color: AIC[n % 10], roughness: .35, metalness: .1, side: THREE.DoubleSide }); MG.forEach(m => { const me = new THREE.Mesh(m.g, m.key == "paint" ? pm : m.mat); me.castShadow = !!__Q.ais; g.add(me) }); const aw = {}; WKS.forEach(k => { const d = WG[k]; if (!d) return; const st = new THREE.Group(), sp = new THREE.Group(); st.position.copy(d.pos); st.add(sp); g.add(st); d.sp.forEach(m => sp.add(new THREE.Mesh(m.g, m.mat))); d.st.forEach(m => st.add(new THREE.Mesh(m.g, m.mat))); aw[k] = { st, sp, x: d.pos.x, y0: d.y0 !== undefined ? d.y0 : d.pos.y, z: d.pos.z } }); g.add(sh.clone()); g.add(mkCS(CARS.f26.wh)); S.add(g); ais.push({ g, aw, col: AIC[n % 10], s: 0, v: 0, lane: 0, tl: 0, top: 58 + rnd() * 14 }) }
         const gm = new THREE.MeshStandardMaterial({ color: 0x7fd8ff, emissive: 0x1a6fa0, transparent: true, opacity: .42, depthWrite: false, roughness: .5 });
         ghostG = new THREE.Group(); MG.forEach(m => { if (m.key != "FERWIND") ghostG.add(new THREE.Mesh(m.g, gm)) }); ghostG.visible = false; S.add(ghostG)
       }
@@ -1181,9 +1198,31 @@ vec4 stkS(){
     const P = { gn: 1, sc: 0, nb: 0, bt: 0, g: 0, x: 0, z: 0, h: 0, vx: 0, vz: 0, sm: 0, pit: 0, roll: 0, off: false, gy: 0, ey: 0, sp: 0, sr: 0, gb: 0, dr: 0, dd: 0, hold: 0, gp: 7, sl: 0, yv: 0 }, K = {};
     let cd = 0, clock = 0, lapStart = 0, lapPrev = -1, best = null, cum = 0, li = 0, finished = false, finMsg = "", lastLap = null;
     function place(i, lane) { P.x = SP[i].x + LF[i][0] * lane; P.z = SP[i].z + LF[i][1] * lane; P.h = Math.atan2(TN[i][0], TN[i][1]); P.vx = P.vz = P.sm = 0; P.dr = P.dd = P.hold = P.yv = 0 }
-    function pose(a) {
-      const f = ((a.s + L0) % N + N) % N, i = Math.floor(f), j = (i + 1) % N, u = f - i, L = (k, n) => k * (1 - u) + n * u, tx = L(TN[i][0], TN[j][0]), tz = L(TN[i][1], TN[j][1]), l = Math.hypot(tx, tz);
-      a.g.position.set(L(SP[i].x, SP[j].x) + tz / l * a.lane, .016 + L(EL[i], EL[j]) + L(BK[i], BK[j]) * a.lane, L(SP[i].z, SP[j].z) - tx / l * a.lane); a.g.rotation.order = "YXZ"; a.g.rotation.set(-Math.atan((EL[j] - EL[i]) / DS), Math.atan2(tx, tz), Math.atan(BK[i]))
+    function aiPath(a, sp) {
+      const f = ((sp + L0) % N + N) % N, i = Math.floor(f), j = (i + 1) % N, u = f - i, L = (k, n) => k * (1 - u) + n * u, tx = L(TN[i][0], TN[j][0]), tz = L(TN[i][1], TN[j][1]), l = Math.hypot(tx, tz);
+      return { x: L(SP[i].x, SP[j].x) + tz / l * a.lane, z: L(SP[i].z, SP[j].z) - tx / l * a.lane, tx, tz, l, i, j, el: L(EL[i], EL[j]), bk: L(BK[i], BK[j]) }
+    }
+    /* AI car pose: snap (dt undefined) or a kinematic-bicycle follower (rear-axle pivot, steered front wheels, pitch/roll, tyres on the road) */
+    function pose(a, dt) {
+      const G = window.__aiGeo, p = aiPath(a, a.s), g = a.g;
+      if (dt === undefined || !a.V || !G) {
+        g.position.set(p.x, p.el + p.bk * a.lane - .004, p.z); g.rotation.order = "YXZ"; const ps = Math.atan2(p.tx, p.tz), pt = -Math.atan((EL[p.j] - EL[p.i]) / DS), rl = Math.atan(BK[p.i]);
+        g.rotation.set(pt, ps, rl); a.V = { psi: ps, d: 0, pt, rl, v0: 0, k: p.i }; if (a.aw) for (const k in a.aw) { a.aw[k].st.rotation.y = 0; a.aw[k].st.position.y = a.aw[k].y0 } return
+      }
+      dt = Math.min(dt, .05); const V = a.V, v = Math.max(a.v, 0), Lb = G.LB, LR = G.LR;
+      let rx = g.position.x - Math.sin(V.psi) * LR, rz = g.position.z - Math.cos(V.psi) * LR;
+      const ld = Math.max(5, Math.min(20, .24 * v + 3.5)), tg = aiPath(a, a.s + ld / DS), al = (() => { let d = Math.atan2(tg.x - rx, tg.z - rz) - V.psi; while (d > Math.PI) d -= 6.2832; while (d < -Math.PI) d += 6.2832; return d })();
+      const maxD = Math.max(.16, Math.min(.5, .56 - v * .0045)); let dc = Math.atan2(2 * Lb * Math.sin(al), ld); dc = Math.max(-maxD, Math.min(maxD, dc));
+      V.d += Math.max(-2.8 * dt, Math.min(2.8 * dt, dc - V.d));
+      V.psi += v / Lb * Math.tan(V.d) * dt; rx += Math.sin(V.psi) * v * dt; rz += Math.cos(V.psi) * v * dt;
+      const ox = rx + Math.sin(V.psi) * LR, oz = rz + Math.cos(V.psi) * LR;
+      const r = near(ox, oz, V.k, 30); V.k = (V.k + r[0] + N) % N; const k = V.k, k1 = (k + 1) % N, k0 = (k - 1 + N) % N, slope = (EL[k1] - EL[k0]) / (2 * DS), tl_ = Math.hypot(TN[k][0], TN[k][1]) || 1;
+      const lane = (ox - SP[k].x) * TN[k][1] / tl_ - (oz - SP[k].z) * TN[k][0] / tl_, ax = dt > 0 ? (v - V.v0) / dt : 0, ay = v * v * Math.tan(V.d) / Lb; V.v0 = v;
+      const k2 = Math.min(1, dt * 7), sl = -Math.atan(slope), bnk = Math.atan(BK[k]);
+      V.pt += (sl + Math.max(-.035, Math.min(.035, -.002 * ax)) - V.pt) * k2; V.rl += (bnk + Math.max(-.04, Math.min(.04, .0014 * ay)) - V.rl) * k2;
+      g.position.set(ox, EL[k] + BK[k] * lane - .004, oz); g.rotation.order = "YXZ"; g.rotation.set(V.pt, V.psi, V.rl);
+      const dp = V.pt - sl, dr = V.rl - bnk, cp = Math.cos(dp), sp_ = Math.sin(dp), sr = Math.sin(dr), cr = Math.cos(dr);
+      for (const kk in a.aw) { const w = a.aw[kk]; w.st.rotation.y = kk[0] == "f" ? V.d : 0; w.sp.rotation.x += v * dt / G.R; w.st.position.y = w.y0 - ((w.x * sr) * cp - w.z * sp_ + w.y0 * (cr * cp - 1)) }
     }
     let _gK = -1; function ghostK(x, z) { if (_gK >= 0) { const r = near(x, z, _gK, 40); if (r[1] < 14) { _gK = (_gK + r[0] + N) % N; return _gK } } _gK = (near(x, z, 0, 450)[0] + N) % N; return _gK }
     function near(x, z, last, win) { let bj = 0, bd = 1e18; for (let j = -win; j <= win; j++) { const k = (last + j + N) % N, dx = x - SP[k].x, dz = z - SP[k].z, d = dx * dx + dz * dz; if (d < bd) { bd = d; bj = j } } return [bj, Math.sqrt(bd)] }
@@ -1421,7 +1460,7 @@ vec4 stkS(){
       if (mode == "race" && cd <= 0) ais.forEach(a => {
         const i = ((Math.floor(a.s) + L0) % N + N) % N; let km = 0; for (let q = 0; q < 40; q += 4)km = Math.max(km, CV[(i + q) % N]); let t = Math.min(a.top * 1.3, Math.sqrt(30 / Math.max(km, 1e-4)));
         a.tw = (a.tw || 0) - dt; for (const o of all) { if (o === a) continue; const d = (o.s - a.s) * DS; if (d > 0 && d < 32 && Math.abs(o.lane - a.lane) < 3.2) { if (!(a.tw > 0)) { a.tl = o.lane > 0 ? -4.8 : 4.8; a.tw = 1.5 } if (d < 14) t = Math.min(t, o.v + 4); if (d < 7) t = Math.min(t, o.v) } }
-        a.lv = a.lv || 0; a.lv += ((a.tl - a.lane) * 6 - a.lv * 5) * dt; a.lv = Math.max(-5, Math.min(5, a.lv)); a.lane += a.lv * dt; a.v += Math.max(-28 * dt, Math.min(16 * dt, t - a.v)); a.s += a.v * dt / DS; pose(a)
+        a.lv = a.lv || 0; a.lv += ((a.tl - a.lane) * 6 - a.lv * 5) * dt; a.lv = Math.max(-5, Math.min(5, a.lv)); a.lane += a.lv * dt; a.v += Math.max(-28 * dt, Math.min(16 * dt, t - a.v)); a.s += a.v * dt / DS; pose(a, dt)
       }); PHYS_AI(ais, dt);
       if (mode == "race") lboard(dt);
       if (mode == "race") ais.forEach(a => { const dx = P.x - a.g.position.x, dz = P.z - a.g.position.z, q = Math.hypot(dx, dz); if (q < 3.2 && q > .01 && Math.abs(P.ey - a.g.position.y) < 4) { P.x += dx / q * (3.2 - q) * .6; P.z += dz / q * (3.2 - q) * .6; P.vx *= .985; P.vz *= .985 } });
